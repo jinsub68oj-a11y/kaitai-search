@@ -660,7 +660,7 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-02 r28 (書類添付)";
+var APP_BUILD = "2026-09-02 r30";
 
 /* ============================================================
    Constants  (lib/constants.ts)
@@ -900,6 +900,9 @@ function logError(kind, msg, extra){
 }
 function readErrLog(){ try { return JSON.parse(localStorage.getItem("dcrm.errlog") || "[]"); } catch (e){ return []; } }
 
+// 案件データの上書きロック。read() が破損で既定値を返したら true になり、以後 writeDeals() を止める。
+var _dealsLocked = false;
+
 function read(key, fallback){
   var raw = null;
   try { raw = localStorage.getItem(key); } catch (e){ return fallback; }
@@ -909,8 +912,31 @@ function read(key, fallback){
     // 壊れた値は消さずに退避（あとで手当てできるように）。呼び出し側は既定値で継続。
     try { localStorage.setItem(key + ".corrupt", raw); } catch (x) {}
     logError("storage-corrupt", key, (e && e.message) || "");
+    if (key === "dcrm.deals" || key === "dcrm.events" || key === "dcrm.logs") _dealsLocked = true;
     return fallback;
   }
+}
+
+// 案件データを上書きする唯一の入口。事故的な全消去を最後にここで止める。
+// reason: "add"/"update"/"delete"/"migrate" は保護対象、"reset"/"import"/"restore"/"seed" は明示操作なので通す。
+function writeDeals(arr, reason){
+  if (!Array.isArray(arr)){ logError("writeDeals-nonarray", String(reason)); return false; }
+  var explicit = (reason === "reset" || reason === "import" || reason === "restore" || reason === "seed");
+  if (!explicit){
+    if (_dealsLocked){
+      logError("writeDeals-blocked", "読み込み不整合のため上書き中止: " + reason);
+      return false;
+    }
+    var cur = null;
+    try { var v = localStorage.getItem("dcrm.deals"); cur = v ? JSON.parse(v) : []; } catch (e){ cur = null; }
+    if (arr.length === 0 && cur && cur.length >= 3){
+      logError("writeDeals-blocked", "0件書き込みを阻止（現在" + cur.length + "件）: " + reason);
+      try { DB.takeSnapshot("消失阻止"); } catch (e){}
+      try { toast("データ保護：案件を全部消す操作をブロックしました"); } catch (e){}
+      return false;
+    }
+  }
+  return write("dcrm.deals", arr);
 }
 function write(key, val){
   try { localStorage.setItem(key, JSON.stringify(val)); return true; }
@@ -924,7 +950,7 @@ function write(key, val){
       toast("保存領域が不足したため、自動バックアップ履歴を整理しました");
       return true;
     } catch (e2){
-      toast("保存に失敗しました。設定＞データ でJSON書き出しをしてください");
+      toast("保存に失敗しました。設定＞データ でバックアップを保存してください");
       return false;
     }
   }
@@ -939,7 +965,8 @@ var FS = {
       if (!FS.ok) return rej(new Error("indexedDB なし"));
       if (FS._db) return res(FS._db);
       var r = indexedDB.open("dcrm-files", 1);
-      r.onupgradeneeded = function(){ try { r.result.createObjectStore("files"); } catch(e){} };
+      // ここで既存ストアを delete/再作成しないこと。バージョンを上げる時も add のみ（添付が消えない保証）。
+      r.onupgradeneeded = function(){ try { if (!r.result.objectStoreNames.contains("files")) r.result.createObjectStore("files"); } catch(e){} };
       r.onsuccess = function(){ FS._db = r.result; res(FS._db); };
       r.onerror = function(){ rej(r.error); };
     });
@@ -956,12 +983,18 @@ var FS = {
   keys: function(){ return FS._open().then(function(db){ return new Promise(function(res){
     var tx = db.transaction("files", "readonly"); var g = tx.objectStore("files").getAllKeys();
     g.onsuccess = function(){ res(g.result || []); }; g.onerror = function(){ res([]); }; }); }); },
-  // どの案件からも参照されていない孤立ファイルを掃除
+  // どの案件からも参照されていない孤立ファイルを掃除。
+  // 案件データが少しでも怪しい時（読めない・壊れている）は絶対に走らせない（全添付を誤削除しないため）。
   gc: function(){
     if (!FS.ok) return;
     try {
+      var raw = localStorage.getItem("dcrm.deals");
+      if (raw == null) return;                               // まだ何も無い
+      var deals; try { deals = JSON.parse(raw); } catch(e){ return; }   // 壊れている → 触らない
+      if (!Array.isArray(deals)) return;
+      if (localStorage.getItem("dcrm.deals.corrupt") != null) return;   // 破損退避あり → 触らない
       var live = {};
-      DB.deals().forEach(function(d){ (d.files || []).forEach(function(f){ if (f && f.id) live[f.id] = 1; }); });
+      deals.forEach(function(d){ (d.files || []).forEach(function(f){ if (f && f.id) live[f.id] = 1; }); });
       FS.keys().then(function(ks){
         ks.forEach(function(k){ if (!live[k]) FS.del(k); });
       }, function(){});
@@ -1027,7 +1060,7 @@ var DB = {
       created_at: now, updated_at: now
     }, data || {});
     deals.push(deal);
-    write(K.deals, deals);
+    writeDeals(deals, "add");
     DB._addEvent(deal.id, "new", deal.created_on);
     return deal;
   },
@@ -1037,7 +1070,7 @@ var DB = {
     for (var i=0;i<deals.length;i++){
       if (deals[i].id===id){
         deals[i] = Object.assign({}, deals[i], patch, { updated_at:new Date().toISOString() });
-        write(K.deals, deals);
+        writeDeals(deals, "update");
         return deals[i];
       }
     }
@@ -1049,14 +1082,14 @@ var DB = {
     var deal = DB.deal(id);
     var evs = DB.events(id);
     var lgs = DB.logs(id);
-    write(K.deals, DB.deals().filter(function(d){ return d.id!==id; }));
+    writeDeals(DB.deals().filter(function(d){ return d.id!==id; }), "delete");
     write(K.events, DB.events().filter(function(e){ return e.deal_id!==id; }));
     write(K.logs, DB.logs().filter(function(l){ return l.deal_id!==id; }));
     return { deal:deal, events:evs, logs:lgs };
   },
   restoreDeal: function(snap){
     if (!snap || !snap.deal) return;
-    var deals = DB.deals(); deals.push(snap.deal); write(K.deals, deals);
+    var deals = DB.deals(); deals.push(snap.deal); writeDeals(deals, "restore");
     var evs = DB.events(); write(K.events, evs.concat(snap.events||[]));
     var lgs = DB.logs(); write(K.logs, lgs.concat(snap.logs||[]));
   },
@@ -1173,7 +1206,7 @@ var DB = {
     var b; try { b = JSON.parse(s.data); } catch (e){ return false; }
     // 復元前に今の状態も退避しておく
     DB.takeSnapshot("復元前");
-    write(K.deals, b.deals || []);
+    writeDeals(b.deals || [], "restore");
     write(K.events, b.events || []);
     write(K.prices, b.prices || []);
     write(K.logs, b.logs || []);
@@ -1187,7 +1220,7 @@ var DB = {
   importJSON: function(text){
     var o = JSON.parse(text);
     try { DB.takeSnapshot("読込前"); } catch(e){}
-    if (o.deals) write(K.deals, o.deals);
+    if (o.deals) writeDeals(o.deals, "import");
     if (o.events) write(K.events, o.events);
     if (o.prices) write(K.prices, o.prices);
     if (o.logs) write(K.logs, o.logs);
@@ -1197,6 +1230,8 @@ var DB = {
     if (o.landseen) write(K.landseen, o.landseen);
     DB.migrate();
   },
+  // migrate は「不足フィールドの追加」だけ。既存の値を書き換え・削除しないこと（更新でデータが消えない保証）。
+  // SCHEMA_VERSION を上げても破壊的変換は禁止。必要なら新キーに移すコピー方式にする。
   migrate: function(){
     var defaults = {
       code:"", created_on:isoToday(), company_name:"", contact_name:"", phone:"", email:"",
@@ -1212,7 +1247,7 @@ var DB = {
       Object.keys(defaults).forEach(function(k){ if (!(k in d)){ d[k] = defaults[k]; changed = true; } });
       if (!d.id){ d.id = uid(); changed = true; }
     });
-    if (changed) write(K.deals, deals);
+    if (changed) writeDeals(deals, "migrate");
     var meta = read(K.meta, {});
     if (meta.schema !== SCHEMA_VERSION){ meta.schema = SCHEMA_VERSION; write(K.meta, meta); }
   },
@@ -2994,7 +3029,7 @@ function filesCardHTML(deal){
     '</div>';
   }).join("");
   var body = FS.ok
-    ? '<div class="field__hint" style="margin-bottom:8px">見積書・図面・現地写真など。PDF・画像を添付できます（1ファイル10MBまで）。本体はこの端末に保存され、<b>JSON書き出しには含まれません</b>。</div>'+
+    ? '<div class="field__hint" style="margin-bottom:8px">見積書・図面・現地写真など。PDF・画像を添付できます（1ファイル10MBまで）。本体はこの端末に保存され、<b>バックアップ（保存）には含まれません</b>。</div>'+
       '<label class="btn btn--soft btn--sm" style="cursor:pointer">'+icon("plus")+'ファイルを追加'+
         '<input type="file" accept="image/*,application/pdf" multiple id="fileInput" style="display:none">'+
       '</label>'+
@@ -4423,18 +4458,18 @@ function ViewSettings(){
         '<div class="kv" style="margin-bottom:14px"><dt>案件</dt><dd>'+counts.deals+' 件</dd>'+
           '<dt>営業履歴</dt><dd>'+counts.events+' 件</dd><dt>単価</dt><dd>'+counts.prices+' 件</dd></div>'+
         '<div class="row">'+
-          '<button class="btn btn--soft" data-act="export">JSON書き出し</button>'+
-          '<button class="btn btn--soft" data-act="import">JSON読み込み</button>'+
+          '<button class="btn btn--soft" data-act="export">'+icon("inbox")+'バックアップを保存</button>'+
+          '<button class="btn btn--soft" data-act="import">バックアップから復元</button>'+
           '<button class="btn btn--soft" data-act="seed">デモデータ投入</button>'+
         '</div>'+
         '<div class="divider"></div>'+
         '<button class="btn btn--danger-soft" data-act="reset">'+icon("trash")+'全データを初期化</button>'+
-        '<p class="muted" style="font-size:12px;margin:10px 0 0">データはこの端末のブラウザ内（localStorage）にのみ保存されます。将来 Supabase に移行する際は <code>DB</code> の実装だけ差し替えます。</p>'+
+        '<p class="muted" style="font-size:12px;margin:10px 0 0">データはこの端末の中だけに保存されます。機種変更やデータ移行のときは、上の「バックアップを保存」で書き出し → 新しい端末で「バックアップから復元」してください。</p>'+
       '</div>'+
 
       '<div class="card"><div class="section-label">自動バックアップ（この端末内）</div>'+
         '<p class="muted" style="font-size:12px;margin:0 0 10px">アプリを開くたびに自動で1日1回スナップショットを保存します（初期化・読み込み・デモ投入の直前も自動保存）。誤って消した／読み込みに失敗した時は、ここから戻せます。<br>'+
-          '<b>最後のファイル書き出し：'+esc(lastExp)+'</b>　端末が変わるとデータは移りません。時々「JSON書き出し」で端末外にも保管してください。</p>'+
+          '<b>最後のバックアップ保存：'+esc(lastExp)+'</b>　端末が変わるとデータは移りません。時々「バックアップを保存」で端末の外にも保管してください。</p>'+
         (snaps.length
           ? '<div class="table-wrap"><table class="table" style="min-width:auto"><thead><tr><th>日時</th><th>きっかけ</th><th class="num">案件</th><th></th></tr></thead><tbody>'+
             snaps.map(function(sn){
@@ -4453,6 +4488,10 @@ function ViewSettings(){
         (SAFE_MODE ? '<div style="color:var(--warning);font-weight:700;font-size:13px;margin-bottom:8px">現在セーフモードで動作中です</div>' : '')+
         '<p class="muted" style="font-size:12.5px;margin:0 0 10px">画面が固まる・エラーが出るときの窓口です。エラーは自動で記録され、下からコピーして共有できます。'+
           '起動できない時は URL の末尾に <code>?safe=1</code> を付けると最小構成で開きます。</p>'+
+        '<p class="muted" style="font-size:12px;margin:0 0 10px;padding:8px 10px;background:var(--surface-3);border-radius:8px">'+
+          '<b>アプリ更新でデータは消えません。</b>案件・写真は端末側（このブラウザ）に保存され、コードを入れ替えても保持されます。'+
+          'さらに、更新後の初回起動時・初期化/読込の直前・毎日1回、自動でバックアップを取り、案件を全消去するような書き込みはブロックします。'+
+          '万一見当たらない時も「自動バックアップ」から戻せます。</p>'+
         '<div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">'+
           '<button class="btn btn--soft btn--sm" data-act="updatecheck">最新版を確認して再読み込み</button>'+
           '<button class="btn btn--soft btn--sm" data-act="safemode">セーフモードで開く</button>'+
@@ -4468,7 +4507,7 @@ function ViewSettings(){
 
       '<div class="card"><div class="section-label">このアプリについて</div>'+
         '<p class="muted" style="font-size:13px;margin:0 0 6px"><b>バージョン: '+APP_BUILD+'</b>（この番号を伝えてもらえると、最新かどうか確認できます）</p>'+
-        '<p class="muted" style="font-size:13px;margin:0">解体サーチ — Phase 1 (MVP)。ダッシュボード / 案件管理 / ステータス管理 / 見込利益計算 / 追客管理 と、Phase 2 の 単価マスタ / 概算原価 / 分析 / シミュレーション を収録。</p>'+
+        '<p class="muted" style="font-size:13px;margin:0">解体工事の営業を、案件登録から成約・利益・追客まで一画面で管理するツールです。物件ページの貼り付けで更地渡しを自動判定します。</p>'+
       '</div>'+
     '</div>';
 
@@ -4512,64 +4551,88 @@ function ViewSettings(){
       root.querySelector('[data-act="export"]').onclick = function(){
         var data = DB.exportJSON();
         DB.markExported();
-        var downloaded = false;
-        try {
-          var blob = new Blob([data], { type:"application/json" });
-          var a = document.createElement("a");
-          a.href = URL.createObjectURL(blob);
-          a.download = "kaitai-eigyo-" + isoToday() + ".json";
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
-          downloaded = true;
-        } catch (e) { downloaded = false; }
+        var fname = "kaitai-search-backup-" + isoToday() + ".json";
+        // 通常環境（GitHub / Netlify / 保存版）: ファイルをそのまま保存。余計な表示なし。
+        if (!isFramed()){
+          try {
+            var blob = new Blob([data], { type:"application/json" });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = fname;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(function(){ try { URL.revokeObjectURL(a.href); } catch(e){} }, 1500);
+            toast("バックアップを保存しました");
+            return;
+          } catch (e){ /* 失敗したら下のコピー方式へ */ }
+        }
+        // プレビュー枠などファイル保存できない環境のみ、コピー用に表示
         openDialog({
-          title:"データの書き出し",
-          desc: downloaded
-            ? "ダウンロードを開始しました。保存できない環境の場合は、下の内容をコピーして保管してください。"
-            : "この画面ではファイル保存ができません。下の内容をすべてコピーして、テキストとして保管してください。",
-          body:'<textarea id="expText" class="input" readonly style="min-height:180px;font-size:12px;white-space:pre">'+esc(data)+'</textarea>',
-          confirmLabel:"コピー", hideCancel:false,
+          title:"バックアップ",
+          desc:"この画面ではファイル保存ができません。下の内容をすべてコピーして、メモアプリ等に貼り付けて保管してください。",
+          body:'<textarea id="expText" class="input" readonly style="min-height:150px;font-size:11px;white-space:pre">'+esc(data)+'</textarea>',
+          confirmLabel:"コピー",
           onMount:function(b){ var t=b.querySelector("#expText"); t.focus(); t.select(); },
           onConfirm:function(b){
             var t=b.querySelector("#expText"); t.focus(); t.select();
             var ok=false;
             try { ok = document.execCommand("copy"); } catch(e){}
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(t.value).then(function(){}, function(){});
-              ok = true;
-            }
-            toast(ok ? "コピーしました" : "手動で選択してコピーしてください");
+            if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(t.value); ok = true; }
+            toast(ok ? "コピーしました" : "長押しで選択してコピーしてください");
             return true;
           }
         });
       };
+
       root.querySelector('[data-act="import"]').onclick = function(){
+        function doImport(txt){
+          confirmDialog("このバックアップから復元しますか？",
+            "今のデータは、この内容に置き換わります（直前の状態は「自動バックアップ」に残ります）。",
+            "復元する", function(){
+              try { DB.importJSON(txt); toast("復元しました"); navTo("/"); render(); }
+              catch(e){ toast("バックアップファイルの形式が正しくありません"); }
+            });
+        }
+        // 通常環境: ファイルを選ぶだけ
+        if (!isFramed()){
+          var inp = document.createElement("input");
+          inp.type = "file"; inp.accept = "application/json,.json";
+          inp.onchange = function(){
+            var f = inp.files && inp.files[0]; if (!f) return;
+            var rd = new FileReader();
+            rd.onload = function(){ doImport(String(rd.result || "")); };
+            rd.onerror = function(){ toast("ファイルを読み込めませんでした"); };
+            rd.readAsText(f);
+          };
+          inp.click();
+          return;
+        }
+        // プレビュー枠: ファイル選択 か 貼り付け
         openDialog({
-          title:"データの読み込み",
-          desc:"書き出したJSONファイルを選ぶか、テキストを貼り付けてください。現在のデータは置き換えられます。",
+          title:"バックアップから復元",
+          desc:"保存したバックアップファイルを選ぶか、内容を貼り付けてください。",
           body:'<div class="stack">'+
             '<button class="btn btn--soft" id="impFile" type="button">ファイルを選ぶ</button>'+
-            '<textarea id="impText" class="input" placeholder="ここにJSONを貼り付け" style="min-height:150px;font-size:12px"></textarea>'+
+            '<textarea id="impText" class="input" placeholder="または、ここに貼り付け" style="min-height:130px;font-size:11px"></textarea>'+
           '</div>',
-          confirmLabel:"読み込む",
+          confirmLabel:"復元する",
           onMount:function(b){
             b.querySelector("#impFile").onclick = function(){
               var inp = document.createElement("input");
               inp.type = "file"; inp.accept = "application/json,.json";
               inp.onchange = function(){
-                var f = inp.files[0]; if (!f) return;
+                var f = inp.files && inp.files[0]; if (!f) return;
                 var r = new FileReader();
-                r.onload = function(){ b.querySelector("#impText").value = r.result; };
+                r.onload = function(){ b.querySelector("#impText").value = String(r.result || ""); };
                 r.readAsText(f);
               };
               inp.click();
             };
           },
           onConfirm:function(b){
-            if (requireField(b.querySelector("#impText"), "JSONを貼り付けるか、ファイルを選んでください")) return true;
-            var txt = b.querySelector("#impText").value.trim();
-            try { DB.importJSON(txt); toast("読み込みました"); render(); }
-            catch(e){ markFieldError(b.querySelector("#impText"), "JSONの形式が正しくありません"); return true; }
+            var txt = (b.querySelector("#impText").value || "").trim();
+            if (!txt){ markFieldError(b.querySelector("#impText"), "ファイルを選ぶか、内容を貼り付けてください"); return true; }
+            try { DB.importJSON(txt); toast("復元しました"); navTo("/"); render(); }
+            catch(e){ markFieldError(b.querySelector("#impText"), "形式が正しくありません"); return true; }
           }
         });
       };
@@ -4639,6 +4702,14 @@ function boot(){
     var r = ev && ev.reason;
     logError("promise-rejection", (r && (r.message || r)) || "unhandled", r && r.stack);
   });
+
+  // 更新後の初回起動なら、migrate の前に必ずバックアップを取る（新版に不具合があっても戻せる）
+  try {
+    var pmeta = read(K.meta, {});
+    if (pmeta.lastBuild && pmeta.lastBuild !== APP_BUILD && DB.deals().length){
+      DB.takeSnapshot("更新前(" + String(pmeta.lastBuild).slice(0, 30) + ")");
+    }
+  } catch(e){}
 
   try { DB.migrate(); } catch(e){ logError("migrate", (e && e.message) || e, e && e.stack); }
   if (!SAFE_MODE){
@@ -4775,16 +4846,21 @@ function boot(){
   if (!location.hash) location.hash = "/";
   render();
 
-  // ここまで来たら起動成功 → クラッシュカウンタをリセット
+  // ここまで来たら起動成功 → クラッシュカウンタをリセット & 現在のバージョンを記録
   try { sessionStorage.setItem("dcrm.bootfail", "0"); } catch(e){}
+  try { var m2 = read(K.meta, {}); if (m2.lastBuild !== APP_BUILD){ m2.lastBuild = APP_BUILD; write(K.meta, m2); } } catch(e){}
 
-  // セーフモード / 破損データの通知バナー
+  // セーフモード / 破損データ / データ消失 の通知バナー
   try {
     if (SAFE_MODE){
       flashError("セーフモードで起動しました（自動バックアップは停止中）。設定＞システム を確認してください。");
     } else {
       var corrupt = Object.keys(localStorage).filter(function(k){ return /^dcrm\..*\.corrupt$/.test(k); });
-      if (corrupt.length){
+      var snapBest = 0;
+      DB.snapshots().forEach(function(s){ if (s.counts && s.counts.deals > snapBest) snapBest = s.counts.deals; });
+      if (DB.deals().length === 0 && snapBest > 0){
+        flashError("案件データが見当たりません。消えていません → 設定＞自動バックアップ から復元してください。");
+      } else if (corrupt.length){
         flashError("一部データの読み込みに問題がありました。設定＞システム、または自動バックアップから復元できます。");
       }
     }
