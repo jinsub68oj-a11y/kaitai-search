@@ -751,7 +751,7 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-04 r55";
+var APP_BUILD = "2026-09-04 r56";
 
 /* ============================================================
    Constants  (lib/constants.ts)
@@ -5658,9 +5658,30 @@ function ViewSettings(){
       });
       var uc = root.querySelector('[data-act="updatecheck"]');
       if (uc) uc.onclick = function(){
-        // キャッシュを避けて本体を取り直す（Netlify/保存版では最新デプロイに切り替わる）
+        uc.disabled = true;
         var base = location.href.split("#")[0].split("?")[0];
-        location.href = base + "?v=" + Date.now() + (location.hash || "#/settings");
+        var reload = function(){ location.href = base + "?v=" + Date.now() + (location.hash || "#/settings"); };
+        var jobs = [];
+        // Service Worker を更新し、キャッシュを全消去してから取り直す
+        try {
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+            jobs.push(navigator.serviceWorker.getRegistrations().then(function(rs){
+              return Promise.all(rs.map(function(r){
+                try { if (r.waiting) r.waiting.postMessage({ type:"skipWaiting" }); } catch(e){}
+                return r.update().catch(function(){});
+              }));
+            }).catch(function(){}));
+          }
+        } catch(e){}
+        try {
+          if (window.caches && caches.keys){
+            jobs.push(caches.keys().then(function(ks){
+              return Promise.all(ks.map(function(k){ return caches.delete(k); }));
+            }).catch(function(){}));
+          }
+        } catch(e){}
+        var t = setTimeout(reload, 2500);   // 念のためのタイムアウト
+        Promise.all(jobs).then(function(){ clearTimeout(t); reload(); }, function(){ clearTimeout(t); reload(); });
       };
       var sm = root.querySelector('[data-act="safemode"]');
       if (sm) sm.onclick = function(){
@@ -6040,6 +6061,16 @@ function boot(){
     }
   } catch(e){}
 }
+
+// Service Worker: 起動のたびにネットから最新の index.html を取りに行く（更新が前に戻る問題の対策）。
+// GitHub Pages / 端末保存版でのみ登録。サンドボックス（Artifactプレビュー）や file:// では登録しない。
+try {
+  if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol) && !isFramed()){
+    navigator.serviceWorker.register("sw.js").then(function(reg){
+      try { reg.update(); } catch(e){}
+    }).catch(function(){});
+  }
+} catch(e){}
 
 try {
   boot();
