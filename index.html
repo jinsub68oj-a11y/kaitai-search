@@ -689,7 +689,7 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-03 r40";
+var APP_BUILD = "2026-09-03 r42";
 
 /* ============================================================
    Constants  (lib/constants.ts)
@@ -1180,6 +1180,8 @@ var DB = {
       amount_presented:null, cost_construction:null, cost_other:null,
       next_follow_on:null, next_action:"", next_action_other:"",
       lost_reason:"", lost_reason_note:"",
+      lost_detail:"",           // 失注のくわしい状況（振り返り用）
+      lost_learn:"",            // 次に活かすこと（改善点）
       survey:null,
       pre:null,                 // 事前見積の入力（下記 readPreFrom の形）
       client_budget:null,       // 客先予算（円）
@@ -2636,6 +2638,10 @@ function ViewDeals(){
       var tel = (d.phone||"").replace(/[^\d+]/g,"");
       return tel ? '<a class="chipbtn" style="min-height:30px;font-size:12px;padding:0 10px;margin-top:6px" href="tel:'+esc(tel)+'">'+icon("phone")+'発信</a>' : '';
     };
+    var filesChip = function(d){
+      var n = (d.files || []).length;
+      return n ? '<button type="button" class="chipbtn" data-files="'+d.id+'" style="min-height:30px;font-size:12px;padding:0 11px;margin-top:6px;cursor:pointer">'+icon("inbox")+'書類 '+n+'</button>' : '';
+    };
     filtered.forEach(function(d){
       var pr = Calc.profit(d);
       var overdue = d.next_follow_on && d.next_follow_on < isoToday() && Calc.isActive(d);
@@ -2643,7 +2649,8 @@ function ViewDeals(){
       var staleB = (stale !== null && stale >= 10) ? ' <span class="badge '+(stale>=21?'pr-high':'pr-mid')+'" title="最終接触からの日数">放置'+stale+'日</span>' : '';
       html += '<tr class="clickable" data-goto="'+d.id+'">'+
         '<td><div style="font-weight:800">'+esc(d.company_name||"（無名）")+'</div>'+
-          '<div class="muted" style="font-size:12px">'+esc(d.contact_name||"")+' ・ 登録 '+fmtDate(d.created_on)+'</div>'+telChip(d)+'</td>'+
+          '<div class="muted" style="font-size:12px">'+esc(d.contact_name||"")+' ・ 登録 '+fmtDate(d.created_on)+'</div>'+
+          '<div class="row" style="gap:6px">'+telChip(d)+filesChip(d)+'</div></td>'+
         '<td>'+statusBadge(d.status)+staleB+'</td>'+
         '<td>'+probBadge(d.probability)+'</td>'+
         '<td class="num" title="'+yen(d.amount_presented)+'">'+yenMan(d.amount_presented)+'</td>'+
@@ -2673,7 +2680,7 @@ function ViewDeals(){
           '<span class="deal-card__amt">見込利益 '+yenMan(pr.profit)+'</span></div>'+
         '<div class="deal-card__row"><span class="muted">次回追客</span>'+
           '<span style="white-space:nowrap'+(overdue?';color:var(--danger);font-weight:800':'')+'">'+(d.next_follow_on?fmtDate(d.next_follow_on):"—")+'</span></div>'+
-        (telChip(d) ? '<div class="row" style="margin-top:8px">'+telChip(d)+'</div>' : '')+
+        ((telChip(d) || filesChip(d)) ? '<div class="row" style="margin-top:8px;gap:6px">'+telChip(d)+filesChip(d)+'</div>' : '')+
       '</div>';
     });
     html += '</div>';
@@ -2688,6 +2695,9 @@ function ViewDeals(){
           if (e.target.closest && e.target.closest("a,button")) return; // 発信ボタン等は行遷移させない
           navTo("/deals/" + el.getAttribute("data-goto"));
         };
+      });
+      root.querySelectorAll("[data-files]").forEach(function(b){
+        b.onclick = function(e){ e.stopPropagation(); openDealFilesDialog(b.getAttribute("data-files")); };
       });
       function bind(id, key, ev){
         var el = root.querySelector("#"+id); if (!el) return;
@@ -3326,6 +3336,108 @@ function fmtBytes(n){
   if (n < 1048576) return Math.round(n / 1024) + " KB";
   return (n / 1048576).toFixed(1) + " MB";
 }
+// 添付1件をプレビュー（画像/ PDF / その他）
+function openAttachment(deal, fid){
+  var m = ((deal && deal.files) || []).filter(function(f){ return f.id === fid; })[0] || {};
+  FS.get(fid).then(function(blob){
+    if (!blob){ toast("ファイル本体が見つかりません（この端末にないか削除済み）"); return; }
+    var url = URL.createObjectURL(blob);
+    var isImg = /^image\//.test(m.type || blob.type || "");
+    var isPdf = /pdf/i.test(m.type || blob.type || "");
+    openDialog({
+      title: m.name || "ファイル", hideCancel: true, confirmLabel: "閉じる",
+      body: (isImg ? '<img src="'+url+'" alt="" style="max-width:100%;border-radius:8px;display:block">'
+            : isPdf ? '<iframe src="'+url+'" style="width:100%;height:58vh;border:1px solid var(--border);border-radius:8px"></iframe>'
+            : '<div class="muted" style="font-size:13px">この形式はプレビューできません。下のボタンで開いてください。</div>')+
+        '<div class="row" style="margin-top:10px;gap:8px">'+
+          '<a href="'+url+'" download="'+esc(m.name || "file")+'" class="btn btn--soft btn--sm">ダウンロード</a>'+
+          '<button type="button" class="btn btn--ghost btn--sm" id="fileNewTab">新しいタブで開く</button>'+
+        '</div>',
+      onMount: function(bd){
+        var nt = bd.querySelector("#fileNewTab");
+        if (nt) nt.onclick = function(){ try { window.open(url, "_blank"); } catch(e){} };
+      },
+      onConfirm: function(){ setTimeout(function(){ try { URL.revokeObjectURL(url); } catch(e){} }, 3000); }
+    });
+  }, function(e){ toast("開けませんでした"); logError("file-get", (e && e.message) || e); });
+}
+
+// 案件一覧などから「書類確認」で開く一覧ダイアログ
+function openDealFilesDialog(dealId){
+  var d = DB.deal(dealId);
+  var list = (d && d.files) || [];
+  if (!list.length){ toast("この案件に添付はありません"); return; }
+  var rows = list.map(function(f){
+    return '<div class="filerow">'+
+      '<div class="filerow__main">'+
+        '<span class="filerow__ic">'+fileIcon(f.type)+'</span>'+
+        '<div style="min-width:0">'+
+          '<div class="filerow__name">'+esc(f.name || "ファイル")+'</div>'+
+          '<div class="filerow__meta">'+fmtBytes(f.size)+' ・ '+fmtDate(f.addedOn)+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<button type="button" class="btn btn--soft btn--sm" data-open-att="'+esc(f.id)+'" style="flex:0 0 auto">開く</button>'+
+    '</div>';
+  }).join("");
+  openDialog({
+    title: (d.company_name || "案件") + "：書類・写真（" + list.length + "）",
+    hideCancel: true, confirmLabel: "閉じる",
+    body: '<div class="filelist">'+rows+'</div>'+
+      '<div class="field__hint" style="margin-top:10px">追加・削除は案件詳細の「書類・写真」から。</div>',
+    onMount: function(bd){
+      bd.querySelectorAll("[data-open-att]").forEach(function(b){
+        b.onclick = function(){ openAttachment(DB.deal(dealId), b.getAttribute("data-open-att")); };
+      });
+    }
+  });
+}
+
+/* ---- 失注メモ（原因・改善点の振り返り） ---------------------------- */
+function openLostDialog(id, isEdit){
+  var d = DB.deal(id) || {};
+  openDialog({
+    title: isEdit ? "失注メモを編集" : "失注として記録",
+    confirmLabel: isEdit ? "保存" : "失注にする",
+    danger: !isEdit,
+    body:'<div class="stack">'+
+      fieldSelectWithOther("失注理由","lost_reason",LOST_REASONS,d.lost_reason||"","lost_reason_note",d.lost_reason_note||"",{required:true,blank:"選択してください",otherPlaceholder:"失注の理由を入力（必須）"})+
+      fieldTextarea("くわしい状況（何があったか）","lost_detail",d.lost_detail||"",{placeholder:"例：相手の予算が合わず。A社が坪1.5万円で受注。こちらの返答が2日遅れた。"})+
+      fieldTextarea("次に活かすこと（改善点）","lost_learn",d.lost_learn||"",{placeholder:"例：初回訪問で概算を即出す。相見積り前提なら値決めを先に握る。"})+
+    '</div>',
+    onMount:function(body){ wireOther(body); },
+    onConfirm:function(body){
+      var reason = body.querySelector('[data-field="lost_reason"]').value;
+      if (requireField(body.querySelector('[data-field="lost_reason"]'), "失注理由を選んでください")) return true;
+      if (requireOthers(body)) return true;
+      var note = (body.querySelector('[data-field="lost_reason_note"]') || {}).value || "";
+      DB.updateDeal(id, {
+        lost_reason: reason,
+        lost_reason_note: reason === "その他" ? note : "",
+        lost_detail: (body.querySelector('[data-field="lost_detail"]') || {}).value || "",
+        lost_learn:  (body.querySelector('[data-field="lost_learn"]')  || {}).value || ""
+      });
+      if (!isEdit) DB.setStatus(id, "lost");
+      toast(isEdit ? "保存しました" : "失注として記録しました"); render();
+    }
+  });
+}
+function lostMemoCardHTML(deal){
+  var reason = deal.lost_reason
+    ? deal.lost_reason + (deal.lost_reason === "その他" && deal.lost_reason_note ? "（" + deal.lost_reason_note + "）" : "")
+    : "未設定";
+  function block(label, val){
+    return '<div style="margin-top:12px"><div class="stat__label">'+esc(label)+'</div>'+
+      '<div style="font-size:13px;line-height:1.65;white-space:pre-wrap'+(val ? '' : ';color:var(--muted)')+'">'+esc(val || "未記入")+'</div></div>';
+  }
+  return '<div class="card" id="lostMemoCard" style="border-color:color-mix(in srgb,var(--danger) 32%,var(--border))">'+
+    '<div class="card__bar"><span class="section-label" style="margin:0">失注メモ（振り返り用）</span>'+
+      '<button type="button" class="btn btn--ghost btn--sm" data-act="edit-lost">編集</button></div>'+
+    '<div style="margin-top:2px"><span class="stat__label">失注理由</span>　<span class="badge s-lost">'+esc(reason)+'</span></div>'+
+    block("くわしい状況（何があったか）", deal.lost_detail)+
+    block("次に活かすこと（改善点）", deal.lost_learn)+
+  '</div>';
+}
+
 function filesCardHTML(deal){
   var list = deal.files || [];
   var rows = list.map(function(f){
@@ -3388,32 +3500,7 @@ function wireFilesCard(root, id){
   };
 
   root.querySelectorAll("[data-file-open]").forEach(function(b){
-    b.onclick = function(){
-      var fid = b.getAttribute("data-file-open");
-      var d = DB.deal(id);
-      var m = (d.files || []).filter(function(f){ return f.id === fid; })[0] || {};
-      FS.get(fid).then(function(blob){
-        if (!blob){ toast("ファイル本体が見つかりません"); return; }
-        var url = URL.createObjectURL(blob);
-        var isImg = /^image\//.test(m.type || blob.type || "");
-        var isPdf = /pdf/i.test(m.type || blob.type || "");
-        openDialog({
-          title: m.name || "ファイル", hideCancel: true, confirmLabel: "閉じる",
-          body: (isImg ? '<img src="'+url+'" alt="" style="max-width:100%;border-radius:8px;display:block">'
-                : isPdf ? '<iframe src="'+url+'" style="width:100%;height:58vh;border:1px solid var(--border);border-radius:8px"></iframe>'
-                : '<div class="muted" style="font-size:13px">この形式はプレビューできません。下のボタンで開いてください。</div>')+
-            '<div class="row" style="margin-top:10px;gap:8px">'+
-              '<a href="'+url+'" download="'+esc(m.name || "file")+'" class="btn btn--soft btn--sm">ダウンロード</a>'+
-              '<button type="button" class="btn btn--ghost btn--sm" id="fileNewTab">新しいタブで開く</button>'+
-            '</div>',
-          onMount: function(bd){
-            var nt = bd.querySelector("#fileNewTab");
-            if (nt) nt.onclick = function(){ try { window.open(url, "_blank"); } catch(e){} };
-          },
-          onConfirm: function(){ setTimeout(function(){ try { URL.revokeObjectURL(url); } catch(e){} }, 3000); }
-        });
-      }, function(e){ toast("開けませんでした"); logError("file-get", (e && e.message) || e); });
-    };
+    b.onclick = function(){ openAttachment(DB.deal(id), b.getAttribute("data-file-open")); };
   });
 
   root.querySelectorAll("[data-file-del]").forEach(function(b){
@@ -3855,6 +3942,11 @@ function ViewDealDetail(id){
   // Two column layout on desktop
   html += '<div class="grid" style="grid-template-columns:1fr;gap:14px">';
 
+  // 失注メモ（失注案件のときだけ・一番上に）
+  if (deal.status === "lost"){
+    html += lostMemoCardHTML(deal);
+  }
+
   // 基本情報（まとめ表示 → 「編集」で入力欄）
   html += basicInfoCardHTML(deal);
 
@@ -4041,26 +4133,9 @@ function ViewDealDetail(id){
 
       // lost flow
       var lostBtn = root.querySelector('[data-act="lost"]');
-      if (lostBtn) lostBtn.onclick = function(){
-        openDialog({
-          title:"失注として記録",
-          confirmLabel:"失注にする",
-          danger:true,
-          body:'<div class="stack">'+
-            fieldSelectWithOther("失注理由","lost_reason",LOST_REASONS,"","lost_reason_note","",{required:true,blank:"選択してください",otherPlaceholder:"失注の理由を入力（必須）"})+
-          '</div>',
-          onMount:function(body){ wireOther(body); },
-          onConfirm:function(body){
-            var reason = body.querySelector('[data-field="lost_reason"]').value;
-            if (requireField(body.querySelector('[data-field="lost_reason"]'), "失注理由を選んでください")) return true;
-            if (requireOthers(body)) return true;
-            var note = (body.querySelector('[data-field="lost_reason_note"]') || {}).value || "";
-            DB.updateDeal(id, { lost_reason:reason, lost_reason_note: reason === "その他" ? note : "" });
-            DB.setStatus(id, "lost");
-            toast("失注として記録しました"); render();
-          }
-        });
-      };
+      if (lostBtn) lostBtn.onclick = function(){ openLostDialog(id, false); };
+      var editLost = root.querySelector('[data-act="edit-lost"]');
+      if (editLost) editLost.onclick = function(){ openLostDialog(id, true); };
 
       var reopen = root.querySelector('[data-act="reopen"]');
       if (reopen) reopen.onclick = function(){
@@ -4717,9 +4792,31 @@ function ViewAnalytics(){
         var w = Math.round(r.n / lostRank[0].n * 100);
         return '<div class="barlist__row"><span>'+esc(r.k)+'</span><span class="barlist__track"><span class="barlist__fill" style="width:'+w+'%"></span></span><span class="barlist__val">'+r.n+'</span></div>';
       }).join("")+'</div>' : '<p class="muted" style="font-size:13px">失注データがありません</p>')+
-    '</div>';
+    '</div>'+
+    (function(){
+      var reviews = deals.filter(function(d){ return d.status === "lost" && (d.lost_detail || d.lost_learn); })
+        .sort(function(a,b){ return (b.lost_on||"") < (a.lost_on||"") ? -1 : (b.lost_on||"") > (a.lost_on||"") ? 1 : 0; })
+        .slice(0, 12);
+      return '<div class="card"><div class="section-label">失注の振り返り</div>'+
+        (reviews.length
+          ? reviews.map(function(d){
+              return '<div class="fu-item" data-goto="'+d.id+'">'+
+                '<div style="font-weight:800;font-size:13.5px">'+esc(d.company_name || "（無名）")+
+                  ' <span class="badge s-lost">'+esc(d.lost_reason || "理由未設定")+'</span>'+
+                  ' <span class="muted" style="font-size:11.5px">'+fmtDate(d.lost_on)+'</span></div>'+
+                (d.lost_detail ? '<div style="font-size:12.5px;color:var(--text-2);margin-top:4px;white-space:pre-wrap;line-height:1.55">'+esc(d.lost_detail)+'</div>' : '')+
+                (d.lost_learn ? '<div style="font-size:12.5px;margin-top:4px;white-space:pre-wrap;line-height:1.55"><b>次に活かす：</b>'+esc(d.lost_learn)+'</div>' : '')+
+              '</div>';
+            }).join("")
+          : '<p class="muted" style="font-size:13px">失注時に「くわしい状況」か「次に活かすこと」を記入すると、ここに並びます。</p>')+
+      '</div>';
+    })();
 
-  return { title:"営業分析", html:html };
+  return { title:"営業分析", html:html, mount:function(root){
+    root.querySelectorAll("[data-goto]").forEach(function(el){
+      el.onclick = function(){ navTo("/deals/" + el.getAttribute("data-goto")); };
+    });
+  }};
 }
 
 /* ============================================================
