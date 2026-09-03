@@ -689,14 +689,14 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-02 r36";
+var APP_BUILD = "2026-09-03 r37";
 
 /* ============================================================
    Constants  (lib/constants.ts)
    ============================================================ */
 var PIPELINE = [
   { key:"new",              label:"新規",     dateField:null },
-  { key:"phone_connected",  label:"電話接続", dateField:"phone_connected_on" },
+  { key:"phone_connected",  label:"初回接触", dateField:"phone_connected_on" },
   { key:"quote_requested",  label:"見積依頼", dateField:"quote_requested_on" },
   { key:"survey_scheduled", label:"現調予定", dateField:"survey_scheduled_on" },
   { key:"survey_done",      label:"現調完了", dateField:"survey_done_on" },
@@ -1583,7 +1583,7 @@ var Calc = {
     var k = Calc.kpis(scope);
     var stages = [
       { name:"案件登録", count:k.registered },
-      { name:"電話接続", count:k.phone,    conv:k.registered ? k.phone/k.registered : null, convLabel:"電話接続率" },
+      { name:"初回接触", count:k.phone,    conv:k.registered ? k.phone/k.registered : null, convLabel:"接触率" },
       { name:"見積依頼", count:k.quoteReq, conv:k.phone ? k.quoteReq/k.phone : null,        convLabel:"見積依頼率" },
       { name:"現調",     count:k.survey,   conv:k.quoteReq ? k.survey/k.quoteReq : null,     convLabel:"現調率" },
       { name:"見積提出", count:k.quoteSub, conv:k.survey ? k.quoteSub/k.survey : null,       convLabel:"見積提出率" },
@@ -2288,7 +2288,7 @@ function ViewDashboard(){
   ];
   var pipeCards = [
     { label:"案件登録", value:k.registered },
-    { label:"電話接続", value:k.phone },
+    { label:"初回接触", value:k.phone },
     { label:"見積依頼", value:k.quoteReq },
     { label:"現調",     value:k.survey },
     { label:"見積提出", value:k.quoteSub },
