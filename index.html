@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja" data-theme="light">
+<html lang="ja" data-theme="dark">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -15,6 +15,18 @@
 <link rel="alternate icon" href="logo.jpg" />
 <link rel="manifest" href="manifest.webmanifest" />
 <title>解体サーチ</title>
+<script>
+/* 初回ペイント前にテーマを確定（既定はダーク。保存済みの選択があればそれを優先）→ 画面のチラつき防止 */
+(function(){
+  try {
+    var s = JSON.parse(localStorage.getItem("dcrm.settings") || "{}");
+    var t = (s && s.theme) || "dark";
+    var el = document.documentElement;
+    if (t === "system") el.removeAttribute("data-theme");
+    else el.setAttribute("data-theme", t);
+  } catch(e){}
+})();
+</script>
 <style>
 /* ============================================================
    Design tokens
@@ -751,7 +763,17 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-04 r56";
+var APP_BUILD = "2026-09-04 r57";
+// アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
+var WHATS_NEW = {
+  "2026-09-04 r57": [
+    "画面を初期からダークテーマに（設定＞表示 でいつでも変更できます）",
+    "アップデート後の初回に、この画面で変更点をお知らせするようにしました"
+  ],
+  "2026-09-04 r56": [
+    "アプリを開くたびに最新版を読み込むように（更新しても前の版に戻る問題を修正）"
+  ]
+};
 
 /* ============================================================
    Constants  (lib/constants.ts)
@@ -1209,7 +1231,7 @@ var DB = {
   },
   prices: function(){ return read(K.prices, []); },
   settings: function(){
-    return Object.assign({ theme:"light", goal_won:0, goal_profit:0,
+    return Object.assign({ theme:"dark", goal_won:0, goal_profit:0,
       own_company:"", demo_reg_expiry:"", const_license_expiry:"",
       cash_on_hand:null, cash_on_hand_on:"" }, read(K.settings, {}));
   },
@@ -5899,10 +5921,12 @@ function boot(){
   });
 
   // 更新後の初回起動なら、migrate の前に必ずバックアップを取る（新版に不具合があっても戻せる）
+  var _updatedFrom = null;
   try {
     var pmeta = read(K.meta, {});
-    if (pmeta.lastBuild && pmeta.lastBuild !== APP_BUILD && DB.deals().length){
-      DB.takeSnapshot("更新前(" + String(pmeta.lastBuild).slice(0, 30) + ")");
+    if (pmeta.lastBuild && pmeta.lastBuild !== APP_BUILD){
+      _updatedFrom = pmeta.lastBuild;   // 「更新しました」表示の判定に使う
+      if (DB.deals().length) DB.takeSnapshot("更新前(" + String(pmeta.lastBuild).slice(0, 30) + ")");
     }
   } catch(e){}
 
@@ -5911,7 +5935,7 @@ function boot(){
     try { DB.autoBackupIfDue(); } catch(e){ logError("autobackup", (e && e.message) || e); }
     try { setTimeout(function(){ FS.gc(); }, 4000); } catch(e){}  // 孤立した添付ファイルの掃除
   }
-  try { applyTheme(DB.settings().theme); } catch(e){ applyTheme("light"); }
+  try { applyTheme(DB.settings().theme); } catch(e){ applyTheme("dark"); }
 
   var root = document.getElementById("root");
   root.innerHTML =
@@ -6058,6 +6082,27 @@ function boot(){
       } else if (corrupt.length){
         flashError("一部データの読み込みに問題がありました。設定＞システム、または自動バックアップから復元できます。");
       }
+    }
+  } catch(e){}
+
+  // 更新後の初回起動：この版の変更点を1回だけ知らせる（初回インストールでは出さない）
+  try {
+    var notes = _updatedFrom && WHATS_NEW[APP_BUILD];
+    if (notes && notes.length && !SAFE_MODE){
+      setTimeout(function(){
+        try {
+          openDialog({
+            title: "更新しました",
+            hideCancel: true,
+            confirmLabel: "OK",
+            body:
+              '<div style="font-size:12px;color:var(--muted);margin:-4px 0 10px">バージョン ' + esc(APP_BUILD) + '</div>' +
+              '<ul style="margin:0;padding-left:20px;line-height:1.75;font-size:13.5px">' +
+              notes.map(function(n){ return '<li>' + esc(n) + '</li>'; }).join('') +
+              '</ul>'
+          });
+        } catch(e){}
+      }, 780);   // 起動アニメが消えてから
     }
   } catch(e){}
 }
