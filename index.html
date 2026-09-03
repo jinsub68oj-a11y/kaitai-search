@@ -689,7 +689,7 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-03 r37";
+var APP_BUILD = "2026-09-03 r40";
 
 /* ============================================================
    Constants  (lib/constants.ts)
@@ -949,6 +949,14 @@ function esc(s){
 function debounce(fn, ms){
   var t; return function(){ var a=arguments, c=this; clearTimeout(t); t=setTimeout(function(){ fn.apply(c,a); }, ms); };
 }
+// メモ用URL: スキーム無しなら https:// を補う。開けないものは null。
+function urlHref(u){
+  u = String(u || "").trim();
+  if (!u) return null;
+  if (/^https?:\/\//i.test(u)) return u;
+  if (/^[\w.-]+\.[a-z]{2,}(\/|$|\?)/i.test(u)) return "https://" + u;
+  return null;
+}
 // サンドボックス（Artifact プレビュー等）内で動いているか。実機・Netlify・保存版では false。
 function isFramed(){
   try { return window.self !== window.top; } catch(e){ return true; }
@@ -1165,6 +1173,7 @@ var DB = {
       code: DB.nextCode(),
       created_on: isoToday(),
       company_name:"", contact_name:"", phone:"", email:"", source:"", source_other:"", site_address:"", memo:"",
+      listing_url:"",           // 物件ページ等の参考URL（メモ用）
       status:"new", probability:"C",
       phone_connected_on:null, quote_requested_on:null, survey_scheduled_on:null,
       survey_done_on:null, quote_submitted_on:null, considering_on:null, won_on:null, lost_on:null,
@@ -2826,24 +2835,39 @@ function parseListing(text){
   var vm = winAfter(t,"容積率",18).match(/(\d+(?:\.\d+)?)\s*[%％]/);
   if (vm){ f.far = parseFloat(vm[1]); rec("容積率", vm[1] + "%"); }
 
-  // 築年
+  // 築年（できるだけ多くの書式に対応：和暦/略号/西暦/相対/新築 など）
+  var nowY = new Date().getFullYear();
   var year = null;
-  var eraW = winAfter(t,"築年月",22) + " " + winAfter(t,"建築年月",22) + " " + winAfter(t,"完成",22) + " " + winAfter(t,"新築",22);
-  var eraM = (eraW + " " + t).match(/(昭和|平成|令和)\s*(\d+)\s*年/);
-  var ad4 = eraW.match(/(19|20)\d{2}/) || t.match(/((?:19|20)\d{2})\s*年(?:\s*\d+\s*月)?\s*(?:築|新築|建築|完成|竣工)/);
-  var chikuM = t.match(/築\s*(\d+)\s*年/);
-  if (eraM){
-    var base = { "昭和":1925, "平成":1988, "令和":2018 }[eraM[1]];
-    year = base + parseInt(eraM[2], 10);
-  } else if (ad4){
-    year = parseInt((ad4[1] && ad4[1].length === 4) ? ad4[1] : ad4[0], 10);
-  } else if (chikuM){
-    year = new Date().getFullYear() - parseInt(chikuM[1], 10);
+  // 見出し周辺（西暦だけ書いてある表組み対策）
+  var yw = ["築年月","建築年月","築年","建築年","新築年月","完成年月","竣工年月","完成年","竣工年","完成","竣工","新築","入居可能","現況"]
+    .map(function(k){ return winAfter(t, k, 26); }).join("  ");
+  var eraFull = (yw + "  " + t).match(/(昭和|平成|令和)\s*(?:(元)|(\d{1,2}))\s*年/);
+  var eraAbbr = (yw + "  " + t).match(/(?:^|[\s（(【\[／/｜|])([SHR])\s*[.．]?\s*(\d{1,2})\s*[.．年/／]/);
+  var yKw     = t.match(/((?:19|20)\d{2})\s*年?(?:\s*\d{1,2}\s*月)?\s*(?:築|新築|建築|完成|竣工)/);
+  var yWin    = yw.match(/((?:19|20)\d{2})/);
+  var relM    = t.match(/築(?:年数|後|浅)?[\s:：]{0,3}(\d{1,2})\s*年(?!\d)/) || t.match(/(?:経過|建築後)[\s:：]{0,3}(\d{1,2})\s*年/);
+  if (eraFull){
+    var b1 = { "昭和":1925, "平成":1988, "令和":2018 }[eraFull[1]];
+    year = b1 + (eraFull[2] ? 1 : parseInt(eraFull[3], 10));       // 「元年」対応
+  } else if (eraAbbr){
+    var b2 = { "S":1925, "H":1988, "R":2018 }[eraAbbr[1]];
+    year = b2 + parseInt(eraAbbr[2], 10);
+  } else if (yKw){
+    year = parseInt(yKw[1], 10);
+  } else if (yWin){
+    year = parseInt(yWin[1], 10);
+  } else if (relM){
+    var rn = parseInt(relM[1], 10);
+    if (rn > 0 && rn < 130) year = nowY - rn;
+  } else if (/新築|築浅|未入居|新古|今年完成|本年完成/.test(yw + "  " + t.slice(0, 500))){
+    year = nowY;
   }
-  if (year && year > 1900 && year <= new Date().getFullYear() + 1){
+  if (year && year > 1900 && year <= nowY + 1){
+    f.build_year = year;
+    f.building_age = Math.max(0, nowY - year);
     var band = year <= 1980 ? "old" : year <= 2000 ? "mid" : "new";
     f.age_band = band;
-    rec("築年", year + "年（" + ({ old:"〜1980", mid:"1981〜2000", "new":"2001〜" }[band]) + "）");
+    rec("築年", year + "年（築" + f.building_age + "年・" + ({ old:"〜1980", mid:"1981〜2000", "new":"2001〜" }[band]) + "）");
   }
 
   // 所在地
@@ -2883,12 +2907,17 @@ function applyListingResult(land, pre){
   setPe("floors", land.floors != null ? land.floors : pf.floors);
   setPe("coverage", land.coverage != null ? land.coverage : pf.coverage);
   setPe("far", land.far != null ? land.far : pf.far);
+  var nowYr = new Date().getFullYear();
+  var buildYr = land.buildYear || pf.build_year || null;
   var band = pf.age_band;
-  if (land.buildYear) band = land.buildYear <= 1980 ? "old" : land.buildYear <= 2000 ? "mid" : "new";
+  if (buildYr) band = buildYr <= 1980 ? "old" : buildYr <= 2000 ? "mid" : "new";
   if (band){
     var bb = document.querySelector('[data-peseg="age_band"] .choice[data-val="' + band + '"]');
     if (bb) bb.click();
   }
+  // 現調の「築年数」も、分かれば埋める（西暦→経過年数）
+  var buildAge = buildYr ? Math.max(0, nowYr - buildYr) : (pf.building_age != null ? pf.building_age : null);
+  if (buildAge != null) fillField("sv_building_age", buildAge);
 
   // 見込み度: 高確度 は既定(C)のときだけ B に引き上げ
   if (land.level === "高確度"){
@@ -3041,11 +3070,7 @@ function preFieldsHTML(pre, opts){
   pre = pre || {};
   opts = opts || {};
   var addons = pre.addons || {};
-  return (opts.hidePaste ? '' :
-    '<div class="row" style="margin-bottom:10px">'+
-      '<button type="button" class="btn btn--soft btn--sm js-paste-listing">'+icon("inbox")+'物件ページを貼り付け（更地渡し判定つき）</button>'+
-    '</div>')+
-    '<div class="field__hint" style="margin-bottom:10px">不動産情報にある分だけ入力。少ないほど幅が広めに出ます。営業前にこれを作っておく想定。</div>'+
+  return '<div class="field__hint" style="margin-bottom:10px">不動産情報にある分だけ入力。少ないほど幅が広めに出ます。営業前にこれを作っておく想定。</div>'+
     '<div class="form-grid">'+
       peInput("土地坪数（チラシ）","land_tsubo",pre.land_tsubo,{type:"number",inputmode:"decimal",hint:"基準になる数字"})+
       peSelectWithOther("構造","structure",STRUCTURES,pre.structure,pre.structure_other)+
@@ -3139,6 +3164,8 @@ function contactActionsHTML(deal){
   if (tel) out.push('<a class="chipbtn" href="tel:'+esc(tel)+'">'+icon("phone")+'電話をかける</a>');
   if (deal.email) out.push('<a class="chipbtn" href="mailto:'+esc(deal.email)+'">'+icon("mail")+'メール</a>');
   if (deal.site_address) out.push('<a class="chipbtn js-maps" data-addr="'+esc(deal.site_address)+'" href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(deal.site_address)+'" target="_blank" rel="noopener">'+icon("pin")+'地図で見る</a>');
+  var lu = urlHref(deal.listing_url);
+  if (lu) out.push('<a class="chipbtn" href="'+esc(lu)+'" target="_blank" rel="noopener noreferrer">'+icon("inbox")+'物件ページ</a>');
   return out.length ? '<div class="row" style="margin-bottom:12px">'+out.join("")+'</div>' : '';
 }
 
@@ -3151,6 +3178,13 @@ function basicInfoCardHTML(deal){
   function row(label, val, isMemo){
     return '<div class="deflist__row"><dt>'+esc(label)+'</dt><dd'+(isMemo?' class="deflist__memo"':'')+'>'+
       (val ? esc(val) : '<span class="muted">未入力</span>')+'</dd></div>';
+  }
+  function urlRow(label, val){
+    var href = urlHref(val);
+    var dd = href
+      ? '<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer" style="word-break:break-all">'+esc(val)+'</a>'
+      : (val ? '<span style="word-break:break-all">'+esc(val)+'</span>' : '<span class="muted">未入力</span>');
+    return '<div class="deflist__row"><dt>'+esc(label)+'</dt><dd>'+dd+'</dd></div>';
   }
   var tagBadges = (deal.tag_inherited ? '<span class="tagbadge">相続</span> ' : '') +
                   (deal.tag_vacant ? '<span class="tagbadge">空き家</span>' : '');
@@ -3165,6 +3199,7 @@ function basicInfoCardHTML(deal){
         row("メール", deal.email)+
         row("発見経路", sourceLabel(deal))+
         row("現場住所", deal.site_address)+
+        (deal.listing_url ? urlRow("物件ページ", deal.listing_url) : "")+
         row("見込み度", probFullLabel(deal.probability))+
         row("メモ", deal.memo, true)+
       '</dl>'+
@@ -3179,6 +3214,7 @@ function basicInfoCardHTML(deal){
         fieldSelectWithOther("発見経路","source",SOURCES,deal.source,"source_other",deal.source_other)+
         '<div></div>'+
         '<div class="col-span">'+fieldInput("現場住所","site_address",deal.site_address)+'</div>'+
+        '<div class="col-span">'+fieldInput("物件ページURL（メモ）","listing_url",deal.listing_url,{type:"url",inputmode:"url",placeholder:"https://..."})+'</div>'+
         '<div class="col-span"><span class="field__label">見込み度</span>'+
           '<div class="segmented" data-seg2="probability" style="margin-top:8px">'+
           PROBABILITIES.map(function(p){
@@ -3614,11 +3650,6 @@ function ViewDealNew(){
   var html =
     '<div class="page-head only-desktop"><div><h1>新規案件登録</h1><p>まずは最小限の項目だけ。現調情報は必要になってから。</p></div></div>'+
     '<form id="newForm" class="stack" style="max-width:760px" novalidate>'+
-      '<div class="card" style="background:var(--primary-weak);border-color:color-mix(in srgb,var(--primary) 25%,transparent)">'+
-        '<div style="font-weight:800;margin-bottom:4px">物件ページから取り込む</div>'+
-        '<p class="muted" style="font-size:12px;margin:0 0 10px">SUUMO・アットホーム等の物件ページ本文をコピペ →「読み取る」で、更地渡し判定と各項目を自動入力。手入力だけでもOK。</p>'+
-        '<button type="button" class="btn btn--primary js-paste-listing">'+icon("inbox")+'物件ページを貼り付けて読み取る</button>'+
-      '</div>'+
       '<div class="card"><div class="section-label">基本情報</div>'+
         '<div class="form-grid">'+
           fieldInput("会社名","company_name","",{required:true,placeholder:"例：山田不動産"})+
@@ -3628,6 +3659,7 @@ function ViewDealNew(){
           fieldSelectWithOther("案件発見経路","source",SOURCES,"","source_other","",{hint:"あとで変更できます"})+
           dateField("案件登録日","created_on",isoToday())+
           '<div class="col-span">'+fieldInput("現場住所","site_address","",{placeholder:"例：東京都足立区千住1-2-3"})+'</div>'+
+          '<div class="col-span">'+fieldInput("物件ページURL（メモ）","listing_url","",{type:"url",inputmode:"url",placeholder:"例：https://suumo.jp/... ／ アットホームの物件ページなど",hint:"あとで見返す用。貼るだけでOK"})+'</div>'+
           '<div class="col-span"><span class="field__label">見込み度</span>'+
             '<div class="segmented" data-seg="probability" style="margin-top:8px">'+
             PROBABILITIES.map(function(p){
@@ -3682,6 +3714,7 @@ function ViewDealNew(){
         var data = {
           company_name:v("company_name"), contact_name:v("contact_name"), phone:v("phone"),
           email:v("email"), source:v("source"), source_other:v("source_other"), site_address:v("site_address"), memo:v("memo"),
+          listing_url:v("listing_url"),
           created_on:v("created_on")||isoToday(), probability:prob,
           next_follow_on: isoDate(fd), next_action: v("phone") ? "電話" : "メール"
         };
@@ -5049,7 +5082,7 @@ function ViewSettings(){
 
       '<div class="card"><div class="section-label">このアプリについて</div>'+
         '<p class="muted" style="font-size:13px;margin:0 0 6px"><b>バージョン: '+APP_BUILD+'</b>（この番号を伝えてもらえると、最新かどうか確認できます）</p>'+
-        '<p class="muted" style="font-size:13px;margin:0">解体工事の営業を、案件登録から成約・利益・追客まで一画面で管理するツールです。物件ページの貼り付けで更地渡しを自動判定します。</p>'+
+        '<p class="muted" style="font-size:13px;margin:0">解体工事の営業を、案件登録から成約・利益・追客まで一画面で管理するツールです。</p>'+
       '</div>'+
     '</div>';
 
