@@ -773,9 +773,12 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-05 r81";
+var APP_BUILD = "2026-09-05 r82";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-05 r82": [
+    "新規案件登録の「基本情報」欄も、スマホで2列に並ぶようにしました"
+  ],
   "2026-09-05 r81": [
     "「営業ステータス」の進める・成約・失注ボタンをさらに小さくしました"
   ],
@@ -4385,7 +4388,7 @@ function ViewDealNew(){
     '<div class="page-head only-desktop"><div><h1>新規案件登録</h1><p>まずは最小限の項目だけ。事前見積は必要になってから。</p></div></div>'+
     '<form id="newForm" class="stack" style="max-width:760px" novalidate>'+
       '<div class="card"><div class="section-label">基本情報</div>'+
-        '<div class="form-grid">'+
+        '<div class="form-grid-2">'+
           fieldInput("会社名","company_name","",{required:true,placeholder:"例：山田不動産"})+
           fieldInput("担当者名","contact_name","",{placeholder:"例：山田 太郎"})+
           fieldInput("電話番号","phone","",{type:"tel",inputmode:"tel",placeholder:"090-1234-5678"})+
