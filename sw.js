@@ -1,7 +1,7 @@
 /* 解体サーチ Service Worker
    目的: アプリを開くたびに「最新の index.html」を取りに行く（ネット優先）。
         回線が遅い/オフラインのときだけキャッシュを使う。 */
-var VERSION = "2026-09-05-r82";
+var VERSION = "2026-09-05-r85";
 var CACHE = "kaitai-shell-" + VERSION;
 var SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg", "./icon-maskable.svg", "./logo.jpg"];
 var HTML_NET_TIMEOUT = 4000;

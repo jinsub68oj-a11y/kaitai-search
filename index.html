@@ -773,9 +773,20 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-05 r82";
+var APP_BUILD = "2026-09-05 r85";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-05 r85": [
+    "不具合修正：新規登録画面で単価表を編集しても、その下の事前見積が仮単価のままだった問題を直しました（登録前でも単価表の金額が事前見積に反映されます）"
+  ],
+  "2026-09-05 r84": [
+    "単価表の「テンプレートから追加」で、項目名と単位もその場で変えられるようにしました（「その他」に好きな名前をつけられます）",
+    "テンプレートに「埋め戻し」（m3）を追加しました"
+  ],
+  "2026-09-05 r83": [
+    "新規案件登録の画面でも「この案件の単価」を編集できるようにしました（登録前でもテンプレ追加・編集・削除ができます）",
+    "前回使った単価が最初から入っています。そのまま登録すれば引き継がれます"
+  ],
   "2026-09-05 r82": [
     "新規案件登録の「基本情報」欄も、スマホで2列に並ぶようにしました"
   ],
@@ -969,6 +980,7 @@ var UNIT_TEMPLATES = [
   { category:"付帯工事", name:"外構撤去",   unit:"式" },
   { category:"付帯工事", name:"浄化槽撤去", unit:"式" },
   { category:"付帯工事", name:"井戸埋め戻し", unit:"式" },
+  { category:"付帯工事", name:"埋め戻し",   unit:"m3" },
   { category:"付帯工事", name:"アスベスト対策", unit:"式" },
   { category:"付帯工事", name:"手壊し割増", unit:"坪" },
   { category:"諸経費",   name:"重機回送費", unit:"式" },
@@ -3825,6 +3837,41 @@ function dealPricesCardHTML(deal){
     '</div>'+
   '</div>';
 }
+// 新規登録フォーム用（r83・案件がまだ無いのでDBには保存せず、prices配列をその場で編集）
+function newDealPricesCardHTML(prices){
+  var rows = (prices || []).slice();
+  var byCat = {};
+  rows.forEach(function(r){ (byCat[r.category] = byCat[r.category] || []).push(r); });
+  var body;
+  if (!rows.length){
+    body = '<div class="field__hint">テンプレートか「単価を追加」で登録してください。登録すると次回の新規案件にも引き継がれます。</div>';
+  } else {
+    body = Object.keys(byCat).map(function(cat){
+      return '<div class="section-label" style="margin-top:10px">'+esc(cat)+'</div>'+
+        '<div class="table-wrap"><table class="table" style="min-width:auto"><thead><tr><th>項目</th><th>単位</th><th class="num">単価</th><th></th></tr></thead><tbody>'+
+        byCat[cat].map(function(r){
+          return '<tr><td style="font-weight:700">'+esc(r.name)+'</td><td>'+esc(r.unit)+'</td><td class="num">'+yen(r.unit_price)+'</td>'+
+            '<td class="num"><button type="button" class="btn btn--sm btn--ghost" data-nprice-edit="'+r.id+'">編集</button> '+
+            '<button type="button" class="btn btn--sm btn--danger-soft" data-nprice-del="'+r.id+'">削除</button></td></tr>';
+        }).join("")+
+        '</tbody></table></div>';
+    }).join("");
+  }
+  return '<div class="disclosure'+(rows.length?' is-open':'')+'" id="newPricesDisc">'+
+    '<button type="button" class="disclosure__btn" id="newPricesToggle"><span>この案件の単価　'+
+      (rows.length ? '<span class="muted">'+rows.length+'件（前回から引き継ぎ・調整可）</span>' : '<span class="muted">未設定</span>')+
+    '</span>'+icon("chevron","chev")+'</button>'+
+    '<div class="disclosure__body">'+
+      body+
+      '<div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">'+
+        '<button type="button" class="btn btn--primary btn--sm" data-nprice-add="1">単価を追加</button>'+
+      '</div>'+
+      '<div class="section-label" style="margin-top:12px">テンプレートから追加</div><div class="segmented">'+
+        UNIT_TEMPLATES.map(function(t,i){ return '<button type="button" class="choice" data-nprice-tpl="'+i+'">'+esc(t.name)+'</button>'; }).join("")+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
 function openDealPriceDialog(dealId, rowId){
   var deal = DB.deal(dealId); if (!deal) return;
   var rows = (deal.prices || []).slice();
@@ -3901,11 +3948,17 @@ function wireDealPricesCard(root, id){
       var t = UNIT_TEMPLATES[Number(b.getAttribute("data-price-tpl"))];
       openDialog({
         title:"「"+t.name+"」を追加", confirmLabel:"追加",
-        body:fieldInput("単価 (円 / "+t.unit+")","tpl_price","",{type:"number",inputmode:"numeric"}),
+        body:'<div class="stack">'+
+          fieldInput("項目名","tpl_name",t.name,{required:true,placeholder:"例：仮設トイレ"})+
+          fieldInput("単位","tpl_unit",t.unit,{placeholder:"坪 / 式 / m / m2 / m3 / 本 / 台"})+
+          fieldInput("単価 (円)","tpl_price","",{type:"number",inputmode:"numeric"})+
+        '</div>',
         onConfirm:function(body){
+          if (requireField(body.querySelector('[data-field="tpl_name"]'), "項目名を入力してください")) return true;
+          if (requireField(body.querySelector('[data-field="tpl_price"]'), "単価を入力してください")) return true;
           var deal = DB.deal(id);
           var rows = (deal.prices || []).slice();
-          rows.push({ id:uid(), category:t.category, category_other:"", name:t.name, unit:t.unit, unit_price:num(body.querySelector('[data-field="tpl_price"]').value) });
+          rows.push({ id:uid(), category:t.category, category_other:"", name:body.querySelector('[data-field="tpl_name"]').value.trim(), unit:body.querySelector('[data-field="tpl_unit"]').value.trim()||t.unit, unit_price:num(body.querySelector('[data-field="tpl_price"]').value) });
           DB.updateDeal(id, { prices: rows });
           syncLastPrices(rows);
           toast("追加しました"); render();
@@ -4361,10 +4414,10 @@ function wirePreEstimate(root, id){
   };
 }
 // 新規登録フォーム用（DB未作成・予算比較なし）
-function wirePreEstimateForm(root){
+function wirePreEstimateForm(root, getPrices){
   function refresh(){
     var el = root.querySelector("#preResult");
-    if (el){ el.innerHTML = preResultHTML({ pre: readPreFrom(root) }, { hideApply:true }); el.classList.remove("pe-updated"); void el.offsetWidth; el.classList.add("pe-updated"); }
+    if (el){ el.innerHTML = preResultHTML({ pre: readPreFrom(root), prices: (getPrices ? getPrices() : null) }, { hideApply:true }); el.classList.remove("pe-updated"); void el.offsetWidth; el.classList.add("pe-updated"); }
   }
   wireAreaFields(root, refresh);
   root.querySelectorAll('[data-pe]').forEach(function(el){ el.addEventListener("change", refresh); });
@@ -4381,9 +4434,15 @@ function wirePreEstimateForm(root){
     };
   });
   root.querySelectorAll(".js-paste-listing").forEach(function(b){ b.onclick = openListingPaste; });
+  return refresh;   // 呼び出し側から手動で再計算できるように（単価表を編集したときなど）
 }
 
 function ViewDealNew(){
+  // r83: この案件の単価表を登録前からフル編集できるように。前回使った単価を初期値としてコピー
+  var newPrices = (function(){
+    try { return (DB.settings().last_prices || []).map(function(r){ return Object.assign({}, r); }); }
+    catch(e){ return []; }
+  })();
   var html =
     '<div class="page-head only-desktop"><div><h1>新規案件登録</h1><p>まずは最小限の項目だけ。事前見積は必要になってから。</p></div></div>'+
     '<form id="newForm" class="stack" style="max-width:760px" novalidate>'+
@@ -4401,11 +4460,12 @@ function ViewDealNew(){
         '</div>'+
       '</div>'+
 
+      '<div id="newPricesWrap">'+newDealPricesCardHTML(newPrices)+'</div>'+
+
       '<div class="disclosure is-open" id="preDisc">'+
         '<button type="button" class="disclosure__btn" id="preToggle">物件情報・見積もり（任意・分かる範囲でOK）'+icon("chevron","chev")+'</button>'+
         '<div class="disclosure__body">'+
-          preFieldsHTML(null, { hideApply:true, hidePaste:true })+
-          '<div class="field__hint" style="margin-top:2px">この案件の単価（協力会社の見積など）は、登録すると詳細画面で入力できます。前回使った単価を引き継ぎます。</div>'+
+          preFieldsHTML(null, { hideApply:true, hidePaste:true }, newPrices)+
           '<div class="divider"></div>'+
           '<div><span class="field__label">見込み度</span>'+
             '<div class="segmented" data-seg="probability" style="margin-top:8px">'+
@@ -4485,10 +4545,10 @@ function ViewDealNew(){
         }
         var patch = {};
         if (pre) patch.pre = pre;
-        // r64: 前回この画面で使った単価を、新しい案件の単価表として引き継ぐ（そこから調整）
+        // r83: この画面で編集した単価表をそのまま登録。次回の新規案件の初期値も更新
         try {
-          var lastPrices = DB.settings().last_prices || [];
-          if (lastPrices.length) patch.prices = lastPrices.map(function(r){ return Object.assign({}, r); });
+          patch.prices = newPrices.map(function(r){ return Object.assign({}, r); });
+          syncLastPrices(newPrices);
         } catch(e){}
         if (Object.keys(patch).length){ try { DB.updateDeal(deal.id, patch); } catch(e){} }
         toast("案件を登録しました（3日後に追客予定をセット）");
@@ -4535,10 +4595,97 @@ function ViewDealNew(){
         });
         var pTog = root.querySelector("#preToggle"), pDisc = root.querySelector("#preDisc");
         if (pTog && pDisc) pTog.onclick = function(){ pDisc.classList.toggle("is-open"); };
-        wirePreEstimateForm(root);
+        var refreshPreEst = wirePreEstimateForm(root, function(){ return newPrices; });
         wireSourceOther(root);
         wireDateFields(root);
         wireMoneyFields(root);
+
+        // この案件の単価表（登録前・DB未保存。newPrices 配列をその場で編集して #newPricesWrap を差し替える）
+        function refreshNewPrices(){
+          var wrap = root.querySelector("#newPricesWrap");
+          if (wrap){ wrap.innerHTML = newDealPricesCardHTML(newPrices); wireNewPrices(); }
+          if (refreshPreEst) refreshPreEst();   // 単価を変えたら事前見積のプレビューも更新
+        }
+        function openNewPriceDialog(rowId){
+          var row = rowId ? newPrices.filter(function(r){ return r.id === rowId; })[0] : null;
+          openDialog({
+            title: row ? "単価を編集" : "単価を追加", confirmLabel:"保存",
+            body:'<div class="stack">'+
+              fieldSelectWithOther("カテゴリ","dp_cat",["構造解体","付帯工事","諸経費","その他"],row?row.category:"","dp_cat_other",row?row.category_other:"",{blank:false,otherPlaceholder:"カテゴリ名を入力（必須）"})+
+              fieldInput("項目名","dp_name",row?row.name:"",{required:true,placeholder:"例：木造解体"})+
+              fieldInput("単位","dp_unit",row?row.unit:"式",{placeholder:"坪 / 式 / m / m2 / 本 / 台"})+
+              fieldInput("単価 (円)","dp_price",row?row.unit_price:"",{type:"number",inputmode:"numeric"})+
+              (row ? '<button type="button" class="btn btn--danger-soft btn--sm" data-dp="del" style="margin-top:6px">この単価を削除</button>' : '')+
+            '</div>',
+            onMount:function(body){
+              wireOther(body);
+              var delBtn = body.querySelector('[data-dp="del"]');
+              if (delBtn) delBtn.onclick = function(){
+                newPrices = newPrices.filter(function(r){ return r.id !== rowId; });
+                var bd = document.getElementById("backdrop"); bd.classList.remove("is-open"); bd.innerHTML = "";
+                toast("削除しました"); refreshNewPrices();
+              };
+            },
+            onConfirm:function(body){
+              if (requireField(body.querySelector('[data-field="dp_name"]'), "項目名を入力してください")) return true;
+              if (requireField(body.querySelector('[data-field="dp_price"]'), "単価を入力してください")) return true;
+              if (requireOthers(body)) return true;
+              var cat = body.querySelector('[data-field="dp_cat"]').value || "その他";
+              var catOther = (body.querySelector('[data-field="dp_cat_other"]') || {}).value.trim() || "";
+              var rec = {
+                id: row ? row.id : uid(), category: cat, category_other: cat === "その他" ? catOther : "",
+                name: body.querySelector('[data-field="dp_name"]').value.trim(),
+                unit: body.querySelector('[data-field="dp_unit"]').value.trim() || "式",
+                unit_price: num(body.querySelector('[data-field="dp_price"]').value)
+              };
+              newPrices = row ? newPrices.map(function(r){ return r.id === row.id ? rec : r; }) : newPrices.concat([rec]);
+              toast("保存しました"); refreshNewPrices();
+            }
+          });
+        }
+        function wireNewPrices(){
+          var disc = root.querySelector("#newPricesDisc");
+          if (disc){
+            var tog = root.querySelector("#newPricesToggle");
+            if (tog) tog.onclick = function(){ disc.classList.toggle("is-open"); };
+          }
+          root.querySelectorAll('[data-nprice-edit]').forEach(function(b){
+            b.onclick = function(){ openNewPriceDialog(b.getAttribute("data-nprice-edit")); };
+          });
+          root.querySelectorAll('[data-nprice-del]').forEach(function(b){
+            b.onclick = function(){
+              var rid = b.getAttribute("data-nprice-del");
+              var r = newPrices.filter(function(x){ return x.id === rid; })[0];
+              confirmDialog("本当に削除しますか？", (r?r.name:"この単価")+" を削除します。", "削除する", function(){
+                newPrices = newPrices.filter(function(x){ return x.id !== rid; });
+                toast("削除しました"); refreshNewPrices();
+              }, true);
+            };
+          });
+          var addB = root.querySelector('[data-nprice-add]');
+          if (addB) addB.onclick = function(){ openNewPriceDialog(null); };
+          root.querySelectorAll('[data-nprice-tpl]').forEach(function(b){
+            b.onclick = function(){
+              var t = UNIT_TEMPLATES[Number(b.getAttribute("data-nprice-tpl"))];
+              openDialog({
+                title:"「"+t.name+"」を追加", confirmLabel:"追加",
+                body:'<div class="stack">'+
+                  fieldInput("項目名","tpl_name",t.name,{required:true,placeholder:"例：仮設トイレ"})+
+                  fieldInput("単位","tpl_unit",t.unit,{placeholder:"坪 / 式 / m / m2 / m3 / 本 / 台"})+
+                  fieldInput("単価 (円)","tpl_price","",{type:"number",inputmode:"numeric"})+
+                '</div>',
+                onConfirm:function(body){
+                  if (requireField(body.querySelector('[data-field="tpl_name"]'), "項目名を入力してください")) return true;
+                  if (requireField(body.querySelector('[data-field="tpl_price"]'), "単価を入力してください")) return true;
+                  newPrices = newPrices.concat([{ id:uid(), category:t.category, category_other:"", name:body.querySelector('[data-field="tpl_name"]').value.trim(), unit:body.querySelector('[data-field="tpl_unit"]').value.trim()||t.unit, unit_price:num(body.querySelector('[data-field="tpl_price"]').value) }]);
+                  toast("追加しました"); refreshNewPrices();
+                }
+              });
+            };
+          });
+        }
+        wireNewPrices();
+
         // 金額管理（見込利益・利益率はその場で計算。案件はまだ無いのでDBには保存しない）
         function refreshProfit(){
           var p = Calc.profit({ amount_presented:num(v("amount_presented")), cost_construction:num(v("cost_construction")), cost_other:num(v("cost_other")) });
