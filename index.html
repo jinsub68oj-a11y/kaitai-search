@@ -765,9 +765,18 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-04 r58";
+var APP_BUILD = "2026-09-05 r61";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-05 r61": [
+    "事前見積の「諸経費・現場経費 率」の入力欄を削除（計算は今まで通り本体の25%で自動計算・内訳表示もそのまま）"
+  ],
+  "2026-09-05 r60": [
+    "案件登録・案件詳細の「事前見積」に、建蔽率を入れると「1階の目安（建築面積）」も一緒に出るようにしました"
+  ],
+  "2026-09-04 r59": [
+    "シミュレーション画面に「土地から延床・解体費のざっくり計算」を追加（土地面積と建ぺい率だけで概算が出ます）"
+  ],
   "2026-09-04 r58": [
     "「その他」メニューを、上のつまみを下にスワイプして閉じられるようにしました"
   ],
@@ -3253,10 +3262,9 @@ function preFieldsHTML(pre, opts){
         '<div class="segmented" data-peseg="age_band" style="margin-top:8px">'+
         AGE_BANDS.map(function(a){ return '<button type="button" class="choice'+(((pre.age_band||"unknown")===a.k)?" is-on":"")+'" data-val="'+a.k+'">'+esc(a.label)+'</button>'; }).join("")+
         '</div></div>'+
-      peInput("建蔽率 %（分かれば）","coverage",pre.coverage,{type:"number",inputmode:"numeric"})+
+      peInput("建蔽率 %（分かれば）","coverage",pre.coverage,{type:"number",inputmode:"numeric",hint:"入れると「1階の目安（建築面積）」も一緒に出ます"})+
       peInput("容積率 %（分かれば）","far",pre.far,{type:"number",inputmode:"numeric"})+
       peInput("実際の延床（登記が取れたら）","known_floor",pre.known_floor,{inputmode:"decimal",placeholder:"坪→ 29 ／ 平米→ 96㎡",hint:"坪はそのまま数字。平米は「96㎡」と単位つきで → 入れるとこの値で確定計算"})+
-      peInput("諸経費・現場経費 率 %","overhead_pct",(pre.overhead_pct==null?25:pre.overhead_pct),{type:"number",inputmode:"numeric",hint:"養生・足場・重機回送・届出など。既定25%"})+
       peInput("産廃処分費（円・分かれば）","disposal",pre.disposal,{type:"number",inputmode:"numeric",hint:"目安 木造3.5万/鉄骨5万/RC8万 ×延床坪。空欄なら諸経費に内包"})+
       peInput("運搬費（円・分かれば）","haul",pre.haul,{type:"number",inputmode:"numeric",hint:"廃材をトラックで処分場へ。2〜4t車 2万円/台・10t車 3〜5万円/台が目安（距離しだい）。空欄なら処分費の目安に内包"})+
       '<div class="col-span"><span class="field__label">現場の割増（写真・Googleで分かる範囲）</span>'+
@@ -3275,7 +3283,7 @@ function readPreFrom(root){
     land_tsubo:areaToTsuboInput(v("land_tsubo")), structure:v("structure"), structure_other:v("structure_other"),
     floors:num(v("floors")), age_band: ageEl ? ageEl.getAttribute("data-val") : "unknown",
     coverage:num(v("coverage")), far:num(v("far")), known_floor:areaToTsuboInput(v("known_floor")),
-    overhead_pct:num(v("overhead_pct")), disposal:num(v("disposal")), haul:num(v("haul")),
+    disposal:num(v("disposal")), haul:num(v("haul")),
     addons:addons
   };
   var any = pre.land_tsubo || pre.structure || pre.known_floor || Object.keys(addons).length;
@@ -3289,9 +3297,14 @@ function preResultHTML(deal, opts){
   var st = (deal.pre && deal.pre.structure) || "木造";
   var floorTxt = f.known ? (Math.round(f.mid)+"坪（登記）")
     : (Math.round(f.low)+"〜"+Math.round(f.high)+"坪　中心 "+Math.round(f.mid)+"坪");
+  // 建築面積（1階の目安）＝土地坪 × 建蔽率。両方入っている時だけ、ついでに出す
+  var landT = deal.pre && num(deal.pre.land_tsubo);
+  var cov = deal.pre && num(deal.pre.coverage);
+  var footprint = (landT && cov) ? Math.round(landT * (cov / 100)) : null;
   return '<div class="card" style="background:var(--surface-2)">'+
     '<div class="row" style="gap:26px;flex-wrap:wrap">'+
       '<div><div class="stat__label">予測 延床面積</div><div class="tnum" style="font-size:21px;font-weight:800">'+esc(floorTxt)+'</div></div>'+
+      (footprint!=null ? '<div><div class="stat__label">建築面積（1階の目安）</div><div class="tnum" style="font-size:21px;font-weight:800">'+footprint+' 坪</div></div>' : '')+
       '<div><div class="stat__label">事前見積（社内・中心）</div><div class="tnum" style="font-size:21px;font-weight:800;color:var(--primary)">'+yen(est.mid)+'</div>'+
         '<div class="stat__delta">幅 '+yen(est.low)+' 〜 '+yen(est.high)+'</div></div>'+
     '</div>'+
@@ -4162,7 +4175,9 @@ function wirePreEstimate(root, id){
     });
   });
   root.querySelectorAll(".js-paste-listing").forEach(function(b){ b.onclick = openListingPaste; });
-  root.addEventListener("click", function(e){
+  // 毎回の再描画で wirePreEstimate が呼ばれるため addEventListener だと重複登録される。
+  // onclick 代入なら再描画のたびに前回ぶんを上書きするので、1個だけになる。
+  root.onclick = function(e){
     var t = e.target.closest("[data-act]"); if (!t) return;
     if (t.getAttribute("data-act") === "preToPresented"){
       var est = Calc.preEstimate(DB.deal(id)); if (!est) return;
@@ -4179,7 +4194,7 @@ function wirePreEstimate(root, id){
       toast("見込み度を更新しました"); render();
       var pd = document.getElementById("preDisc"); if (pd) pd.classList.add("is-open");
     }
-  });
+  };
 }
 // 新規登録フォーム用（DB未作成・予算比較なし）
 function wirePreEstimateForm(root){
@@ -5068,10 +5083,47 @@ function ViewProfit(){
    VIEW: Simulation
    ============================================================ */
 var simState = { deals: 4, profit: 200000 };
+var simLand = { area:"", coverage:"", far:"", floors:2, structure:"木造" };
 function ViewSimulation(){
   function calc(n){ var m = n * simState.profit; return { m:m, y:m*12 }; }
   var cur = calc(simState.deals);
   var rows = [2,4,6,8].map(function(n){ return { n:n, r:calc(n) }; });
+
+  // 土地面積（＋建ぺい率・容積率・階数・構造）から延床と解体費のざっくりを出す
+  function landCalc(){
+    var tsubo = areaToTsuboInput(simLand.area);
+    if (!tsubo || tsubo <= 0) return null;
+    var cov = num(simLand.coverage), far = num(simLand.far);
+    var fl = num(simLand.floors) || 2;
+    var st = simLand.structure || "木造";
+    var fa = Calc.predictFloorArea({ land_tsubo:tsubo, coverage:cov, far:far, floors:fl, structure:st, age_band:"unknown" });
+    var u = Calc.unitPriceFor(st);
+    return {
+      tsubo:tsubo, st:st, unit:u.price, unitFallback:u.fallback,
+      footprint: cov ? tsubo * (cov / 100) : null,
+      fa: fa,
+      demoLow:  fa ? Math.round(fa.low  * u.price * 1.15) : null,
+      demoMid:  fa ? Math.round(fa.mid  * u.price * 1.30) : null,
+      demoHigh: fa ? Math.round(fa.high * u.price * 1.50) : null
+    };
+  }
+  function landResultHTML(){
+    var c = landCalc();
+    if (!c) return '<div class="muted" style="font-size:13px">土地面積を入れると、1階の目安・予測延床・解体費のざっくりが出ます。</div>';
+    var h = '<div class="row" style="gap:26px;flex-wrap:wrap">';
+    if (c.footprint != null)
+      h += '<div><div class="stat__label">建築面積（1階の目安）</div><div class="tnum" style="font-size:20px;font-weight:800">'+Math.round(c.footprint)+' 坪</div></div>';
+    if (c.fa)
+      h += '<div><div class="stat__label">予測 延床</div><div class="tnum" style="font-size:20px;font-weight:800">'+Math.round(c.fa.low)+'〜'+Math.round(c.fa.high)+' 坪 <span class="muted" style="font-size:12px">中心 '+Math.round(c.fa.mid)+'</span></div></div>';
+    h += '</div>';
+    if (c.demoMid != null)
+      h += '<div class="divider"></div>'+
+        '<div><div class="stat__label">解体費（ざっくり・'+esc(c.st)+' '+NF.format(c.unit)+'円/坪 ×延床＋諸経費）</div>'+
+        '<div class="tnum" style="font-size:21px;font-weight:800;color:var(--primary)">'+yen(c.demoMid)+'</div>'+
+        '<div class="stat__delta">幅 '+yen(c.demoLow)+' 〜 '+yen(c.demoHigh)+'</div></div>';
+    h += '<div class="field__hint" style="margin-top:10px">現地・築年・搬出条件で ±30% 動きます。'+(c.unitFallback?'仮単価で計算中（単価マスタ登録で精度が上がります）。':'')+'きちんと出すなら案件を作って「事前見積」で。</div>';
+    return h;
+  }
 
   var html =
     '<div class="page-head only-desktop"><div><h1>利益シミュレーション</h1><p>月間成約件数 × 1件平均利益 から、月間・年間利益を試算。</p></div></div>'+
@@ -5097,6 +5149,18 @@ function ViewSimulation(){
         '<div class="table-wrap"><table class="table" style="min-width:auto"><thead><tr><th>月間成約</th><th class="num">月間利益</th><th class="num">年間利益</th></tr></thead><tbody id="simTable">'+
         rows.map(function(x){ return '<tr><td>月 '+x.n+' 件</td><td class="num">'+yen(x.r.m)+'</td><td class="num">'+yen(x.r.y)+'</td></tr>'; }).join("")+
         '</tbody></table></div></div>'+
+      '<div class="card"><div class="section-label">土地から延床・解体費のざっくり計算</div>'+
+        '<p class="muted" style="font-size:12.5px;margin:0 0 10px">物件情報の「土地面積」と「建ぺい率」だけで、だいたいの延床坪と解体費が出ます（案件を作らずに試せます）。</p>'+
+        '<div class="form-grid">'+
+          fieldInput("土地面積","lc_area",simLand.area,{inputmode:"decimal",placeholder:"坪→ 60 ／ 平米→ 198㎡",hint:"坪はそのまま数字。平米は「198㎡」と単位つきで"})+
+          fieldInput("建ぺい率 %","lc_cov",simLand.coverage,{type:"number",inputmode:"numeric",placeholder:"例) 60"})+
+          fieldInput("容積率 %（分かれば）","lc_far",simLand.far,{type:"number",inputmode:"numeric",placeholder:"例) 200"})+
+          fieldInput("階数","lc_floors",simLand.floors,{type:"number",inputmode:"numeric"})+
+          fieldSelect("構造","lc_st",STRUCTURES,simLand.structure,{blank:false})+
+        '</div>'+
+        '<div class="divider"></div>'+
+        '<div id="lcResult">'+landResultHTML()+'</div>'+
+      '</div>'+
     '</div>';
 
   return {
@@ -5114,6 +5178,18 @@ function ViewSimulation(){
       root.querySelector('[data-field="sim_profit"]').addEventListener("input", function(){ simState.profit = num(this.value)||0; refresh(); });
       root.querySelectorAll("[data-preset]").forEach(function(b){
         b.onclick = function(){ simState.profit = Number(b.getAttribute("data-preset")); root.querySelector('[data-field="sim_profit"]').value = simState.profit; refresh(); };
+      });
+
+      // 土地から延床・解体費のざっくり計算
+      var lcMap = { lc_area:"area", lc_cov:"coverage", lc_far:"far", lc_floors:"floors", lc_st:"structure" };
+      Object.keys(lcMap).forEach(function(id){
+        var el = root.querySelector('[data-field="'+id+'"]');
+        if (!el) return;
+        el.addEventListener(el.tagName === "SELECT" ? "change" : "input", function(){
+          simLand[lcMap[id]] = this.value;
+          var box = root.querySelector("#lcResult");
+          if (box) box.innerHTML = landResultHTML();
+        });
       });
     }
   };
