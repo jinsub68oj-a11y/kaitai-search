@@ -773,9 +773,12 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-07 r88";
+var APP_BUILD = "2026-09-07 r89";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-07 r89": [
+    "案件の基本情報に「物件価格」（売出価格）を追加しました。「680万」「1.2億」でも入力できます"
+  ],
   "2026-09-07 r88": [
     "事前見積の「本体単価」を万円で入力するように変えました（例：4.2 → 42,000円/坪）。以前に入れた金額はそのまま万円表示に切り替わります"
   ],
@@ -1365,6 +1368,7 @@ var DB = {
       listing_url:"",           // 物件ページ等の参考URL（メモ用）
       handover:"",              // 引き渡し方法（"更地渡し" | "現況渡し" | ""）
       torihiki:"",              // 取引態様（"専任媒介" | "一般媒介" | ""）
+      property_price:null,      // 物件価格（売出価格・円）
       status:"new", probability:"C",
       phone_connected_on:null, quote_requested_on:null, survey_scheduled_on:null,
       survey_done_on:null, quote_submitted_on:null, considering_on:null, won_on:null, lost_on:null,
@@ -1607,7 +1611,7 @@ var DB = {
       quote_submitted_on:null, considering_on:null, won_on:null, lost_on:null,
       amount_presented:null, cost_construction:null, cost_other:null,
       next_follow_on:null, next_action:"", next_action_other:"", lost_reason:"", lost_reason_note:"",
-      survey:null, pre:null, client_budget:null, client_budget_band:"", files:[], pay_items:[], handover:"", torihiki:""
+      survey:null, pre:null, client_budget:null, client_budget_band:"", files:[], pay_items:[], handover:"", torihiki:"", property_price:null
     };
     var deals = DB.deals(); var changed = false;
     // r64: 単価マスタ廃止 → 案件ごとの単価表へ移行。まだ持っていない案件には、既存の単価マスタの内容を初期値としてコピー（1回だけ・データは消さない）
@@ -3476,6 +3480,7 @@ function basicInfoCardHTML(deal){
         row("発見経路", sourceLabel(deal))+
         row("引き渡し方法", deal.handover)+
         row("取引態様", deal.torihiki)+
+        row("物件価格", deal.property_price ? yen(deal.property_price) : "")+
         row("現場住所", deal.site_address)+
         (deal.listing_url ? urlRow("物件ページ", deal.listing_url) : "")+
         row("メモ", deal.memo, true)+
@@ -3491,7 +3496,7 @@ function basicInfoCardHTML(deal){
         fieldSelectWithOther("発見経路","source",SOURCES,deal.source,"source_other",deal.source_other)+
         fieldSelect("引き渡し方法","handover",["更地渡し","現況渡し"],deal.handover,{blank:"未選択"})+
         fieldSelect("取引態様","torihiki",["専任媒介","一般媒介"],deal.torihiki,{blank:"未選択"})+
-        '<div></div>'+
+        moneyField("物件価格","property_price",deal.property_price,{hint:"売出価格。「680万」「1.2億」でも可"})+
         '<div class="col-span">'+fieldInput("現場住所","site_address",deal.site_address)+'</div>'+
         '<div class="col-span">'+fieldInput("物件ページURL（メモ）","listing_url",deal.listing_url,{type:"url",inputmode:"url",placeholder:"https://..."})+'</div>'+
         '<div class="col-span">'+fieldTextarea("メモ","memo",deal.memo)+'</div>'+
@@ -4471,6 +4476,8 @@ function ViewDealNew(){
           dateField("案件登録日","created_on",isoToday())+
           fieldSelect("引き渡し方法","handover",["更地渡し","現況渡し"],"",{blank:"未選択"})+
           fieldSelect("取引態様","torihiki",["専任媒介","一般媒介"],"",{blank:"未選択"})+
+          moneyField("物件価格","property_price","",{hint:"売出価格。「680万」「1.2億」でも可"})+
+          '<div></div>'+
           '<div class="col-span">'+fieldInput("現場住所","site_address","",{placeholder:"例：東京都足立区千住1-2-3"})+'</div>'+
           '<div class="col-span">'+fieldInput("物件ページURL（メモ）","listing_url","",{type:"url",inputmode:"url",placeholder:"例：https://suumo.jp/... ／ アットホームの物件ページなど",hint:"あとで見返す用。貼るだけでOK"})+'</div>'+
           '<div class="col-span">'+fieldTextarea("メモ","memo","",{placeholder:"自由記述は最小限に。"})+'</div>'+
@@ -4544,7 +4551,7 @@ function ViewDealNew(){
         var data = {
           company_name:v("company_name"), contact_name:v("contact_name"), phone:v("phone"),
           email:v("email"), source:v("source"), source_other:v("source_other"), site_address:v("site_address"), memo:v("memo"),
-          listing_url:v("listing_url"), handover:v("handover"), torihiki:v("torihiki"),
+          listing_url:v("listing_url"), handover:v("handover"), torihiki:v("torihiki"), property_price:num(v("property_price")),
           created_on:v("created_on")||isoToday(), probability:prob,
           next_follow_on: isoDate(fd), next_action: v("phone") ? "電話" : "メール",
           amount_presented:num(v("amount_presented")), cost_construction:num(v("cost_construction")), cost_other:num(v("cost_other"))
