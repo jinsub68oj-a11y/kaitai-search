@@ -178,7 +178,7 @@ h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:0}
 .btn:hover{filter:brightness(.97)}
 .btn:active{filter:brightness(.92);transform:translateY(1px)}
 .btn:focus-visible{outline:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--primary) 30%,transparent)}
-.nav__item:focus-visible,.tabbar__item:focus-visible,.card__link:focus-visible,.chipbtn:focus-visible,.choice:focus-visible,.pill-toggle button:focus-visible,.disclosure__btn:focus-visible,.loglist__del:focus-visible,.funnel-toggle:focus-visible{
+.nav__item:focus-visible,.tabbar__item:focus-visible,.card__link:focus-visible,.chipbtn:focus-visible,.choice:focus-visible,.pill-toggle button:focus-visible,.disclosure__btn:focus-visible,.loglist__del:focus-visible{
   outline:2px solid var(--primary);outline-offset:2px;border-radius:8px;
 }
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important} }
@@ -409,15 +409,16 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 .table tfoot td{font-weight:800;background:var(--surface-2);border-top:2px solid var(--border-strong)}
 
 /* Deal cards (mobile list) */
+.deal-cards{display:flex;flex-direction:column;gap:8px}
 .deal-card{
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:14px;box-shadow:var(--shadow-sm);cursor:pointer;display:flex;flex-direction:column;gap:9px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 12px;box-shadow:var(--shadow-sm);cursor:pointer;display:flex;flex-direction:column;gap:6px;
 }
 .deal-card:active{filter:brightness(.97)}
 .deal-card__top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.deal-card__co{font-weight:800;font-size:15px}
-.deal-card__meta{font-size:12px;color:var(--muted);font-weight:600}
-.deal-card__row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.deal-card__co{font-weight:800;font-size:14px;line-height:1.3}
+.deal-card__meta{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:1px}
+.deal-card__row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px}
 .deal-card__amt{font-weight:800;font-variant-numeric:tabular-nums}
 
 /* Funnel */
@@ -443,17 +444,19 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 .barlist__val{font-weight:800;font-variant-numeric:tabular-nums;min-width:48px;text-align:right}
 
 /* Priority list */
-.prio{display:flex;flex-direction:column;gap:8px}
+.prio{display:flex;flex-direction:column;gap:6px}
+.prio__grp{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
 .prio__item{
-  display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--border);
   border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;
 }
 .prio__item:hover{background:var(--surface-3)}
-.prio__rank{width:22px;height:22px;border-radius:6px;background:var(--primary-weak);color:var(--primary);font-weight:800;font-size:12px;display:grid;place-items:center;flex:0 0 auto}
 .prio__body{min-width:0;flex:1}
-.prio__co{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.prio__sub{font-size:12px;color:var(--muted);font-weight:600}
+.prio__co{font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prio__sub{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+.prio__fu{font-weight:700}
 .prio__amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:13px;text-align:right;flex:0 0 auto}
+.prio__amtlab{display:block;font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:1px}
 
 /* Follow-up columns */
 .fu-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
@@ -481,20 +484,6 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 .tl__date{width:140px;flex:0 0 auto}
 .tl__date .datein{min-height:36px;padding:6px 8px;font-size:13px;text-align:center}
 @media (max-width:900px){ .tl__date{width:118px} }
-
-/* ファネル折りたたみ */
-.funnel-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;background:none;border:none;padding:0;margin-bottom:14px;cursor:pointer;font-family:inherit;text-align:left;color:var(--text)}
-.funnel-toggle .card__hint{display:inline-flex;align-items:center;gap:5px}
-.funnel-toggle .chev{width:16px;height:16px;transition:transform .15s ease}
-.funnel-card.is-collapsed .funnel-toggle{margin-bottom:0}
-.funnel-card.is-collapsed .funnel-toggle .chev{transform:rotate(-90deg)}
-.funnel-card.is-collapsed .funnel-body{display:none}
-@media (min-width:901px){
-  .funnel-toggle{cursor:default}
-  .funnel-toggle .chev{display:none}
-  .funnel-card.is-collapsed .funnel-body{display:block}
-  .funnel-card.is-collapsed .funnel-toggle{margin-bottom:14px}
-}
 
 /* 今月の目標 */
 .goalrow{padding:8px 0}
@@ -526,11 +515,6 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 .regrow__head input{width:18px;height:18px;accent-color:var(--primary);flex:0 0 auto}
 .regrow__name{margin-right:2px}
 .regrow__detail{margin:5px 0 0 27px;font-size:12px;color:var(--muted);line-height:1.5}
-/* 目印チップ（相続・空き家） */
-.tagchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.tagchip{min-height:34px;padding:0 13px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);font-weight:700;font-size:12.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.tagchip.is-on{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
-.tagbadge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;background:var(--primary-weak);color:var(--primary);vertical-align:middle}
 .chklist{display:flex;flex-direction:column;gap:12px;margin-top:4px}
 .chkitem{display:flex;gap:10px;font-size:13px;line-height:1.55}
 .chkitem input{width:18px;height:18px;accent-color:var(--primary);flex:0 0 auto;margin-top:1px}
@@ -773,9 +757,38 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-07 r90";
+var APP_BUILD = "2026-09-07 r99";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-07 r99": [
+    "ダッシュボードの「成約率」タイルを外しました（営業分析で確認できます）"
+  ],
+  "2026-09-07 r98": [
+    "ダッシュボードの集計から「初回接触」の数字を外しました"
+  ],
+  "2026-09-07 r97": [
+    "ダッシュボードの「商談の流れ」を営業分析ページへ移しました",
+    "ダッシュボードの「今後の追客」「平均受注期間」の数字を整理しました（受注期間は営業分析で確認できます）"
+  ],
+  "2026-09-07 r96": [
+    "ダッシュボードの「予算 ＞ 事前見積 の案件」カードを削除しました"
+  ],
+  "2026-09-07 r95": [
+    "ダッシュボードの優先案件リストで、金額の上に小さく「見込」と表示するようにしました"
+  ],
+  "2026-09-07 r94": [
+    "案件一覧（スマホ）のカードをコンパクトにして、一度に見える件数を増やしました"
+  ],
+  "2026-09-07 r93": [
+    "ダッシュボードの「優先して対応する案件」を「今日対応」と「今後対応」に分けて、表示をコンパクトにしました",
+    "重複していた「今日 連絡する」欄をなくしました（追客の期限は「今日対応」に集約）"
+  ],
+  "2026-09-07 r92": [
+    "ダッシュボードの「優先して対応する案件」を「今日対応」と「今後対応」に分けて、表示をコンパクトにしました"
+  ],
+  "2026-09-07 r91": [
+    "「この案件の目印（相続・空き家）」と「相続・空き家メモ」カードを削除しました（データは残っています）"
+  ],
   "2026-09-07 r90": [
     "事前見積の「現場の割増」に「堀車庫あり」を追加しました（単価表に「堀車庫解体」テンプレも追加）"
   ],
@@ -1389,9 +1402,9 @@ var DB = {
       demo_date:null,           // 解体予定日（届出の締切計算に使用）
       contract_incl:null,       // 請負金額 税込（r69で「届出と事前調査」カード廃止・現在は未使用。旧データ温存のためキーのみ残置）
       reg_tasks:{},             // r69で「届出と事前調査」カード廃止・現在は未使用。旧データ温存のためキーのみ残置
-      tag_inherited:false,      // 目印：相続
-      tag_vacant:false,         // 目印：空き家
-      proposal:null,            // 相続・空き家メモ { c1,c2,c3, subsidy, note }
+      tag_inherited:false,      // r90で「相続・空き家」機能廃止・現在は未使用。旧データ温存のためキーのみ残置
+      tag_vacant:false,         // r90で廃止・未使用（旧データ温存）
+      proposal:null,            // r90で廃止・未使用（旧データ温存）
       pay_items:[],             // 入金・支払の予定（資金繰り）[{id,dir:'in'|'out',label,amount,due,done,done_on}]
       prices:[],                // この案件だけの単価表（r64・単価マスタ廃止）[{id,category,category_other,name,unit,unit_price}]
       files:[],                 // 添付書類のメタ（本体は IndexedDB）
@@ -2570,21 +2583,19 @@ function updateNav(path){
 var dashScope = "all";
 function ViewDashboard(){
   var k = Calc.kpis(dashScope);
-  var funnel = Calc.funnel(dashScope);
   var scopeLabel = dashScope === "month" ? "今月" : "全期間";
-  var avg = Calc.avgWinDays();
-  var top = Calc.topPriority(5);
-  var fb = Calc.followBuckets();
+  var prioCands = Calc.topPriority(12);
+  var _td = isoToday();
+  var prioToday  = prioCands.filter(function(d){ return d.next_follow_on && d.next_follow_on <= _td; }).slice(0, 6);
+  var prioFuture = prioCands.filter(function(d){ return !(d.next_follow_on && d.next_follow_on <= _td); }).slice(0, 5);
   var totalDeals = DB.deals().length;
 
   var heroCards = [
     { label:"見込利益（進行中）",         value:yenMan(k.estProfit),  full:yen(k.estProfit),  cls:"accent" },
-    { label:"確定利益（"+scopeLabel+"）", value:yenMan(k.confProfit), full:yen(k.confProfit), cls:"good" },
-    { label:"成約率（"+scopeLabel+"）",   value:pct(k.winRate),       full:"",                cls:"" }
+    { label:"確定利益（"+scopeLabel+"）", value:yenMan(k.confProfit), full:yen(k.confProfit), cls:"good" }
   ];
   var pipeCards = [
     { label:"案件登録", value:k.registered },
-    { label:"初回接触", value:k.phone },
     { label:"見積依頼", value:k.quoteReq },
     { label:"見積提出", value:k.quoteSub },
     { label:"成約",     value:k.won,  cls:"good" },
@@ -2691,102 +2702,33 @@ function ViewDashboard(){
     html += '</div>';
   }
 
-  // Today priority + follow snapshot
+  // 優先して対応する案件（今日対応 / 今後対応 で分ける）
   html += '<div class="grid" style="grid-template-columns:1fr;margin-bottom:16px">';
-  html += '<div class="card"><div class="card__head"><div><div class="card__title">今日 優先して対応する案件</div>'+
-    '<div class="card__hint" style="margin-top:2px">右の金額は見込利益</div></div>'+
+  html += '<div class="card"><div class="card__head"><div class="card__title">優先して対応する案件</div>'+
     '<button type="button" class="card__link" data-goto-view="/deals">案件一覧 '+icon("arrow-right")+'</button></div>';
-  if (!top.length){
-    html += '<div class="empty" style="padding:20px">'+icon("check")+'<p style="margin:8px 0 0">対応中の案件はありません</p></div>';
-  } else {
-    html += '<div class="prio">';
-    top.forEach(function(d, i){
-      var pr = Calc.profit(d);
-      var fu = d.next_follow_on ? (d.next_follow_on < isoToday() ? '<span class="badge pr-high badge--dot">追客期限超過</span>'
-              : d.next_follow_on === isoToday() ? '<span class="badge pr-mid badge--dot">今日追客</span>' : '追客 '+fmtDate(d.next_follow_on)) : '';
-      html += '<div class="prio__item" data-goto="'+d.id+'">'+
-        '<div class="prio__rank">'+(i+1)+'</div>'+
-        '<div class="prio__body">'+
-          '<div class="prio__co">'+esc(d.company_name||"（無名）")+'</div>'+
-          '<div class="prio__sub">'+statusBadge(d.status)+' '+probBadge(d.probability)+' '+fu+'</div>'+
-        '</div>'+
-        '<div class="prio__amt" title="'+yen(pr.profit)+'">'+yenMan(pr.profit)+'</div>'+
-      '</div>';
-    });
-    html += '</div>';
-  }
-  html += '</div>';
-
-  // 今日 連絡する（期限超過＋今日の追客）
-  var todayFollow = fb.overdue.concat(fb.today);
-  html += '<div class="card" style="margin-bottom:16px"><div class="card__head">'+
-    '<div class="card__title">今日 連絡する（'+todayFollow.length+'）</div>'+
-    '<button type="button" class="card__link" data-goto-view="/follow-ups">追客管理へ '+icon("arrow-right")+'</button></div>';
-  if (!todayFollow.length){
-    html += '<div class="muted" style="font-size:13px">期限が来ている追客はありません。今後の追客 '+fb.upcoming.length+' 件。</div>';
-  } else {
-    html += '<div class="prio">'+
-      todayFollow.slice(0,6).map(function(d){
-        var od = d.next_follow_on < isoToday() ? daysBetween(d.next_follow_on, isoToday()) : 0;
-        var tel = (d.phone||"").replace(/[^\d+]/g, "");
-        return '<div class="prio__item" data-goto="'+d.id+'">'+
-          '<div class="prio__body">'+
-            '<div class="prio__co">'+esc(d.company_name||"（無名）")+' '+(od>0?'<span class="badge pr-high">'+od+'日超過</span>':'<span class="badge pr-mid">今日</span>')+'</div>'+
-            '<div class="prio__sub">'+statusBadge(d.status)+' '+esc(d.next_action||"アクション未設定")+'</div>'+
-          '</div>'+
-          '<div class="row" style="gap:6px;flex:0 0 auto">'+
-            (tel ? '<a class="chipbtn" style="min-height:34px;font-size:12px;padding:0 11px" href="tel:'+esc(tel)+'">'+icon("phone")+'電話</a>' : '')+
-            '<button type="button" class="btn btn--soft btn--sm" data-done="'+d.id+'">対応</button>'+
-          '</div>'+
-        '</div>';
-      }).join("")+
-      (todayFollow.length>6 ? '<div class="muted" style="font-size:12px;padding-top:6px">ほか '+(todayFollow.length-6)+' 件</div>' : '')+
+  function prioRow(d, showFu){
+    var pr = Calc.profit(d);
+    var fu = "";
+    if (showFu && d.next_follow_on) fu = ' <span class="prio__fu">追客 '+fmtDate(d.next_follow_on)+'</span>';
+    return '<div class="prio__item" data-goto="'+d.id+'">'+
+      '<div class="prio__body">'+
+        '<div class="prio__co">'+esc(d.company_name||"（無名）")+'</div>'+
+        '<div class="prio__sub">'+statusBadge(d.status)+' '+probBadge(d.probability)+fu+'</div>'+
+      '</div>'+
+      '<div class="prio__amt" title="'+yen(pr.profit)+'"><span class="prio__amtlab">見込</span>'+yenMan(pr.profit)+'</div>'+
     '</div>';
   }
-  html += '</div>';
-
-  html += '<div class="stats" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-bottom:16px">'+
-    '<div class="stat"><div class="stat__label">今後の追客</div><div class="stat__value tnum">'+fb.upcoming.length+'</div></div>'+
-    '<div class="stat"><div class="stat__label">平均受注期間</div><div class="stat__value tnum">'+(avg===null?"—":avg)+'<small> 日</small></div></div>'+
-  '</div>';
-
-  // Funnel（スマホでは折りたたみ）
-  var funBody = '<div class="funnel">'+
-    funnel.map(function(s, i){
-      return (i>0 ? '<div class="funnel__conv">'+esc(s.convLabel)+' <b>'+(s.conv===null?"—":pct(s.conv*100))+'</b></div>' : '')+
-        '<div class="funnel__row">'+
-          '<div class="funnel__name">'+esc(s.name)+'</div>'+
-          '<div class="funnel__track"><div class="funnel__bar" style="width:'+Math.max(s.width,7)+'%"><span class="funnel__count tnum">'+s.count+'</span></div></div>'+
-        '</div>';
-    }).join("")+
-  '</div>';
-  html += '<div class="card funnel-card"><button type="button" class="card__head funnel-toggle" id="funnelToggle" aria-expanded="true">'+
-      '<div class="card__title">商談の流れ（'+esc(scopeLabel)+'）</div>'+
-      '<span class="card__hint">各段階の転換率 '+icon("chevron","chev")+'</span></button>'+
-    '<div class="funnel-body" id="funnelBody">'+funBody+'</div>'+
-  '</div>';
-
-  // 予算 ＞ 事前見積 の案件（利益が乗りやすい）
-  var favorable = DB.deals().filter(Calc.isActive).map(function(d){
-    return { d:d, bv:Calc.budgetVsEstimate(d) };
-  }).filter(function(x){ return x.bv.status === "favorable"; })
-    .sort(function(a,b){ return b.bv.diff - a.bv.diff; });
-  html += '<div class="card" style="margin-top:16px"><div class="card__head">'+
-    '<div class="card__title">予算 ＞ 事前見積 の案件（利益が乗りやすい）</div>'+
-    '<span class="card__hint">'+favorable.length+' 件</span></div>';
-  if (!favorable.length){
-    html += '<div class="muted" style="font-size:13px">案件詳細の「事前見積・客先予算」を入れると、ここに有望案件が並びます。</div>';
+  if (!prioToday.length && !prioFuture.length){
+    html += '<div class="empty" style="padding:20px">'+icon("check")+'<p style="margin:8px 0 0">対応中の案件はありません</p></div>';
   } else {
-    html += '<div class="prio">';
-    favorable.slice(0,5).forEach(function(x){
-      html += '<div class="prio__item" data-goto="'+x.d.id+'">'+
-        '<div class="prio__rank" style="background:color-mix(in srgb,var(--success) 16%,transparent);color:var(--success)">◎</div>'+
-        '<div class="prio__body"><div class="prio__co">'+esc(x.d.company_name||"（無名）")+'</div>'+
-          '<div class="prio__sub">'+statusBadge(x.d.status)+' 予算 '+yenMan(x.bv.budget)+' / 見積 '+yenMan(x.bv.mid)+'</div></div>'+
-        '<div class="prio__amt" style="color:var(--success)" title="'+yen(x.bv.diff)+'">+'+yenMan(x.bv.diff)+'<div class="prio__sub" style="text-align:right">差額</div></div>'+
-      '</div>';
-    });
-    html += '</div>';
+    if (prioToday.length){
+      html += '<div class="prio__grp">今日対応（'+prioToday.length+'）</div><div class="prio">'+
+        prioToday.map(function(d){ return prioRow(d, false); }).join("")+'</div>';
+    }
+    if (prioFuture.length){
+      html += '<div class="prio__grp"'+(prioToday.length?' style="margin-top:12px"':'')+'>今後対応（'+prioFuture.length+'）</div><div class="prio">'+
+        prioFuture.map(function(d){ return prioRow(d, true); }).join("")+'</div>';
+    }
   }
   html += '</div>';
 
@@ -2801,22 +2743,9 @@ function ViewDashboard(){
       root.querySelectorAll("[data-goto]").forEach(function(el){
         el.onclick = function(e){ if (e.target.closest("button, a")) return; navTo("/deals/" + el.getAttribute("data-goto")); };
       });
-      root.querySelectorAll("[data-done]").forEach(function(b){
-        b.onclick = function(){ openFollowDoneDialog(b.getAttribute("data-done")); };
-      });
       root.querySelectorAll("[data-goto-view]").forEach(function(el){
         el.onclick = function(){ navTo(el.getAttribute("data-goto-view")); };
       });
-      var ftog = root.querySelector("#funnelToggle");
-      if (ftog){
-        var fcard = ftog.closest(".funnel-card");
-        if (window.matchMedia("(max-width:900px)").matches) fcard.classList.add("is-collapsed");
-        ftog.onclick = function(){
-          if (!window.matchMedia("(max-width:900px)").matches) return;
-          var c = fcard.classList.toggle("is-collapsed");
-          ftog.setAttribute("aria-expanded", c ? "false" : "true");
-        };
-      }
     }
   };
 }
@@ -2932,7 +2861,7 @@ function ViewDeals(){
     html += '</tbody></table></div>';
 
     // mobile cards
-    html += '<div class="stack only-mobile">';
+    html += '<div class="deal-cards only-mobile">';
     filtered.forEach(function(d){
       var pr = Calc.profit(d);
       var overdue = d.next_follow_on && d.next_follow_on < isoToday() && Calc.isActive(d);
@@ -2941,16 +2870,16 @@ function ViewDeals(){
       html += '<div class="deal-card" data-goto="'+d.id+'">'+
         '<div class="deal-card__top">'+
           '<div><div class="deal-card__co">'+esc(d.company_name||"（無名）")+'</div>'+
-          '<div class="deal-card__meta">'+esc(d.contact_name||"担当者未設定")+' ・ '+esc(sourceLabel(d)||"経路未設定")+'</div>'+
-          '<div class="deal-card__meta">登録 '+fmtDate(d.created_on)+'</div></div>'+
+          '<div class="deal-card__meta">'+esc(d.contact_name||"担当者未設定")+' ・ '+esc(sourceLabel(d)||"経路未設定")+' ・ '+fmtDate(d.created_on)+'登録</div></div>'+
           probBadge(d.probability)+
         '</div>'+
-        '<div class="deal-card__row" style="flex-wrap:wrap;gap:6px">'+statusBadge(d.status)+(prioBadge(Calc.priorityBucket(d))||"")+staleB+'</div>'+
-        '<div class="deal-card__row"><span class="muted">提示 '+yenMan(d.amount_presented)+'</span>'+
-          '<span class="deal-card__amt">見込利益 '+yenMan(pr.profit)+'</span></div>'+
-        '<div class="deal-card__row"><span class="muted">次回追客</span>'+
-          '<span style="white-space:nowrap'+(overdue?';color:var(--danger);font-weight:800':'')+'">'+(d.next_follow_on?fmtDate(d.next_follow_on):"—")+'</span></div>'+
-        ((telChip(d) || filesChip(d)) ? '<div class="row" style="margin-top:8px;gap:6px">'+telChip(d)+filesChip(d)+'</div>' : '')+
+        '<div class="deal-card__row" style="justify-content:flex-start;flex-wrap:wrap;gap:6px">'+statusBadge(d.status)+(prioBadge(Calc.priorityBucket(d))||"")+staleB+'</div>'+
+        '<div class="deal-card__row">'+
+          '<span class="muted">提示 '+yenMan(d.amount_presented)+'</span>'+
+          '<span class="deal-card__amt">利益 '+yenMan(pr.profit)+'</span>'+
+          '<span style="white-space:nowrap;'+(overdue?'color:var(--danger);font-weight:800':'color:var(--muted)')+'">追客 '+(d.next_follow_on?fmtDate(d.next_follow_on):"—")+'</span>'+
+        '</div>'+
+        ((telChip(d) || filesChip(d)) ? '<div class="row" style="gap:6px">'+telChip(d)+filesChip(d)+'</div>' : '')+
       '</div>';
     });
     html += '</div>';
@@ -3471,12 +3400,9 @@ function basicInfoCardHTML(deal){
       : (val ? '<span style="word-break:break-all">'+esc(val)+'</span>' : '<span class="muted">未入力</span>');
     return '<div class="deflist__row"><dt>'+esc(label)+'</dt><dd>'+dd+'</dd></div>';
   }
-  var tagBadges = (deal.tag_inherited ? '<span class="tagbadge">相続</span> ' : '') +
-                  (deal.tag_vacant ? '<span class="tagbadge">空き家</span>' : '');
   var summary =
     '<div class="basic-summary">'+
       contactActionsHTML(deal)+
-      (tagBadges ? '<div style="margin:2px 0 10px">'+tagBadges+'</div>' : '')+
       '<dl class="deflist">'+
         row("会社名", deal.company_name)+
         row("担当者", deal.contact_name)+
@@ -3505,13 +3431,6 @@ function basicInfoCardHTML(deal){
         '<div class="col-span">'+fieldInput("現場住所","site_address",deal.site_address)+'</div>'+
         '<div class="col-span">'+fieldInput("物件ページURL（メモ）","listing_url",deal.listing_url,{type:"url",inputmode:"url",placeholder:"https://..."})+'</div>'+
         '<div class="col-span">'+fieldTextarea("メモ","memo",deal.memo)+'</div>'+
-        '<div class="col-span"><span class="field__label">この案件の目印</span>'+
-          '<div class="tagchips">'+
-            '<button type="button" class="tagchip'+(deal.tag_inherited?" is-on":"")+'" data-tag="tag_inherited">相続</button>'+
-            '<button type="button" class="tagchip'+(deal.tag_vacant?" is-on":"")+'" data-tag="tag_vacant">空き家</button>'+
-          '</div>'+
-          '<span class="field__hint">付けると「相続・空き家メモ」（提案の切り口）が下に出ます。</span>'+
-        '</div>'+
       '</div>'+
       '<div class="row" style="margin-top:14px"><button type="button" class="btn btn--primary btn--sm" data-act="done-basic">'+icon("check")+'編集を終える</button></div>'+
     '</div>';
@@ -3519,30 +3438,6 @@ function basicInfoCardHTML(deal){
     '<div class="card__bar"><span class="section-label" style="margin:0">基本情報</span>'+
       '<button type="button" class="btn btn--ghost btn--sm" data-act="edit-basic">編集</button></div>'+
     summary + edit +
-  '</div>';
-}
-
-/* ---- 届出と事前調査カード ------------------------------------------- */
-/* ---- 相続・空き家メモ（提案の切り口） ------------------------------- */
-function proposalCardHTML(deal){
-  var p = deal.proposal || {};
-  function chk(key, label){
-    return '<label class="chkitem"><input type="checkbox" data-prop="'+key+'"'+(p[key]?" checked":"")+'><span>'+label+'</span></label>';
-  }
-  return '<div class="card" id="proposalCard">'+
-    '<div class="section-label">相続・空き家メモ（提案の切り口）</div>'+
-    '<div class="chklist">'+
-      chk("c1","<b>建物は1981年（昭和56年）5月31日より前に建った</b>　→　「相続した空き家の3,000万円特別控除」の対象になる可能性。2027年末までの売却が条件。売却後・翌年2月15日までの取り壊しでも可（要件あり）。※適用の可否は税理士に確認。")+
-      chk("c2","<b>特定空家の「勧告」を受けている</b>　→　土地の固定資産税の軽減（住宅用地特例）が外れ、最大で約6倍に。早く解体・売却する強い動機になる。")+
-      chk("c3","<b>市区町村の解体補助金を確認した</b>　→　補助率1/3〜2/3・上限100〜200万円が多い。原則、着工前の申請が必要（着工後は不可のことが多い）。")+
-    '</div>'+
-    '<div class="stack" style="margin-top:14px">'+
-      '<label class="field"><span class="field__label">補助金メモ（自治体名・制度名・上限・締切）</span>'+
-        '<textarea class="input" data-prop-field="subsidy" placeholder="例：◯◯市 老朽危険空家除却補助 上限50万 補助1/2 申請は着工前">'+esc(p.subsidy||"")+'</textarea></label>'+
-      '<label class="field"><span class="field__label">お客様への提案メモ</span>'+
-        '<textarea class="input" data-prop-field="note" placeholder="例：解体→更地で売却。控除と補助金を使えば手残りが増える見込み。">'+esc(p.note||"")+'</textarea></label>'+
-    '</div>'+
-    '<div class="field__hint" style="margin-top:8px">税金・補助金の可否は必ず税理士・自治体の窓口でご確認ください。ここは商談メモです。</div>'+
   '</div>';
 }
 
@@ -4827,10 +4722,6 @@ function ViewDealDetail(id){
       '</div></div>'+
   '</div>';
 
-  // 相続・空き家メモ（目印が付いたら表示）
-  if (deal.tag_inherited || deal.tag_vacant){
-    html += proposalCardHTML(deal);
-  }
 
   // 案件ごとの単価表
   html += dealPricesCardHTML(deal);
@@ -4948,38 +4839,7 @@ function ViewDealDetail(id){
           if (first) first.focus();
         };
         if (doneBtn) doneBtn.onclick = function(){ render(); }; // 入力は autosave 済み。まとめ表示に戻す
-        // 目印チップ（相続・空き家）: その場で保存。カード表示はまとめ表示に戻したとき反映
-        basicCard.querySelectorAll('[data-tag]').forEach(function(chip){
-          chip.onclick = function(){
-            var key = chip.getAttribute("data-tag");
-            var on = !chip.classList.contains("is-on");
-            chip.classList.toggle("is-on", on);
-            var patch = {}; patch[key] = on;
-            DB.updateDeal(id, patch);
-            toast(on ? "目印を付けました" : "目印を外しました");
-          };
-        });
       }
-
-
-      // 相続・空き家メモ
-      root.querySelectorAll('[data-prop]').forEach(function(cb){
-        cb.onchange = function(){
-          var d = DB.deal(id); if (!d) return;
-          var p = Object.assign({}, d.proposal || {});
-          p[cb.getAttribute("data-prop")] = cb.checked;
-          DB.updateDeal(id, { proposal: p });
-        };
-      });
-      root.querySelectorAll('[data-prop-field]').forEach(function(ta){
-        ta.addEventListener("change", function(){
-          var d = DB.deal(id); if (!d) return;
-          var p = Object.assign({}, d.proposal || {});
-          p[ta.getAttribute("data-prop-field")] = ta.value;
-          DB.updateDeal(id, { proposal: p });
-          toast("保存しました");
-        });
-      });
 
       // status advance buttons
       root.querySelectorAll("[data-status]").forEach(function(b){
@@ -5691,6 +5551,17 @@ function ViewAnalytics(){
       '<div class="stat stat--good"><div class="stat__label">平均案件利益（成約）</div><div class="stat__value tnum" title="'+yen(avgProfit)+'">'+yenMan(avgProfit)+'</div></div>'+
       '<div class="stat"><div class="stat__label">平均受注期間</div><div class="stat__value tnum">'+(avgDays===null?"—":avgDays)+'<small> 日</small></div></div>'+
       '<div class="stat"><div class="stat__label">成約 / 総案件</div><div class="stat__value tnum">'+wonDeals.length+' <small>/ '+deals.length+'</small></div></div>'+
+    '</div>'+
+    '<div class="card"><div class="section-label">商談の流れ（全期間）</div>'+
+      '<div class="funnel">'+
+        Calc.funnel("all").map(function(s, i){
+          return (i>0 ? '<div class="funnel__conv">'+esc(s.convLabel)+' <b>'+(s.conv===null?"—":pct(s.conv*100))+'</b></div>' : '')+
+            '<div class="funnel__row">'+
+              '<div class="funnel__name">'+esc(s.name)+'</div>'+
+              '<div class="funnel__track"><div class="funnel__bar" style="width:'+Math.max(s.width,7)+'%"><span class="funnel__count tnum">'+s.count+'</span></div></div>'+
+            '</div>';
+        }).join("")+
+      '</div>'+
     '</div>'+
     barTable("発見経路別 成果（どこから探すのが効率的か）", bySource, { head:"発見経路", days:true })+
     barTable("見込み度別 成果", byProb, { head:"見込み度" })+
