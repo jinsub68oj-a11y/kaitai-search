@@ -773,9 +773,12 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-07 r89";
+var APP_BUILD = "2026-09-07 r90";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-07 r90": [
+    "事前見積の「現場の割増」に「堀車庫あり」を追加しました（単価表に「堀車庫解体」テンプレも追加）"
+  ],
   "2026-09-07 r89": [
     "案件の基本情報に「物件価格」（売出価格）を追加しました。「680万」「1.2億」でも入力できます"
   ],
@@ -993,6 +996,7 @@ var UNIT_TEMPLATES = [
   { category:"付帯工事", name:"浄化槽撤去", unit:"式" },
   { category:"付帯工事", name:"井戸埋め戻し", unit:"式" },
   { category:"付帯工事", name:"埋め戻し",   unit:"m3" },
+  { category:"付帯工事", name:"堀車庫解体", unit:"式" },
   { category:"付帯工事", name:"アスベスト対策", unit:"式" },
   { category:"付帯工事", name:"手壊し割増", unit:"坪" },
   { category:"諸経費",   name:"重機回送費", unit:"式" },
@@ -1026,6 +1030,7 @@ var PRE_ADDONS = [
   { k:"exterior",  label:"庭木・物置・カーポート", amount:180000, priceName:"外構撤去" },
   { k:"septic",    label:"浄化槽あり",            amount:80000,  priceName:"浄化槽撤去" },
   { k:"well",      label:"井戸あり",              amount:50000,  priceName:"井戸埋め戻し" },
+  { k:"horishako", label:"堀車庫あり",            amount:400000, priceName:"堀車庫解体" },
   { k:"asbestos",  label:"アスベストの可能性",     amount:300000, priceName:"アスベスト対策" },
   { k:"tight",     label:"重機が入りにくい",       amount:0,      priceName:"手壊し割増" } // 単価×延床坪 or 延床坪×1万
 ];
