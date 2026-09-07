@@ -266,20 +266,28 @@ h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:0}
 .stat--good .stat__value{color:var(--success)}
 .stat--bad .stat__value{color:var(--danger)}
 /* dashboard hero (big money) + compact pipeline counters */
-.stats--hero{grid-template-columns:repeat(3,1fr)}
-.stat--hero{padding:16px 18px}
-.stat--hero .stat__value{font-size:31px;margin-top:4px}
+.stats--hero{grid-template-columns:repeat(2,1fr);gap:10px}
+.stat--hero{padding:12px 14px}
+.stat--hero .stat__label{font-size:11.5px}
+.stat--hero .stat__value{font-size:24px;margin-top:3px}
 .stats--compact{grid-template-columns:repeat(7,1fr);gap:8px}
 .stat--sm{padding:10px 12px}
 .stat--sm .stat__label{font-size:11px}
 .stat--sm .stat__value{font-size:20px;margin-top:2px}
 @media (max-width:900px){
-  .stats--hero{grid-template-columns:repeat(2,1fr)}
-  .stats--hero .stat--hero:last-child{grid-column:1 / -1}
-  .stat--hero .stat__value{font-size:24px}
+  .stat--hero .stat__value{font-size:21px}
   .stats--compact{grid-template-columns:repeat(auto-fill,minmax(88px,1fr))}
   .stat--sm .stat__value{font-size:18px}
 }
+
+/* 金額管理: 自社 / 外注 の利益を並べて表示 */
+.profit2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.profit2__box{border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);padding:10px 12px}
+.profit2__head{font-size:11.5px;font-weight:800;color:var(--muted);letter-spacing:.03em;margin-bottom:7px}
+.profit2__row{display:flex;align-items:baseline;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.profit2__row + .profit2__row{margin-top:5px}
+.profit2__k{font-size:11px;color:var(--muted);font-weight:700;flex:0 0 auto}
+.profit2__v{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px;text-align:right;margin-left:auto}
 
 /* Badges */
 .badge{
@@ -614,10 +622,10 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 .kv dd{margin:0;font-weight:600;text-align:right}
 
 .card__bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
-.deflist{margin:0;display:flex;flex-direction:column}
-.deflist__row{display:grid;grid-template-columns:84px 1fr;gap:14px;align-items:start;padding:9px 2px;border-top:1px solid var(--border);font-size:13.5px}
-.deflist__row:first-child{border-top:0}
-.deflist__row dt{color:var(--muted);font-weight:700}
+.deflist{margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));column-gap:18px}
+.deflist__row{display:grid;grid-template-columns:80px 1fr;gap:8px;align-items:start;padding:6px 2px;border-top:1px solid var(--border);font-size:12.5px}
+.deflist__row--full{grid-column:1 / -1}
+.deflist__row dt{color:var(--muted);font-weight:700;white-space:nowrap}
 .deflist__row dd{margin:0;font-weight:600;word-break:break-word}
 .deflist__memo{white-space:pre-wrap}
 
@@ -757,9 +765,24 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-07 r99";
+var APP_BUILD = "2026-09-07 r105";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-07 r105": [
+    "金額管理に「外注費」欄を追加し、「自社で受ける場合」と「外注に出す場合」の見込利益を並べて表示するようにしました",
+    "外注の利益 ＝ 提示金額 − 外注費 − その他原価"
+  ],
+  "2026-09-07 r104": [
+    "ダッシュボードの「見込利益」「確定利益」を横並びにしてコンパクトにしました"
+  ],
+  "2026-09-07 r103": [
+    "案件の「基本情報」を2列表示にしてコンパクトにしました"
+  ],
+  "2026-09-07 r102": [
+    "見積の自動計算をやめました。案件の「物件情報」は 土地坪・建坪・構造・階数・メモ を入れて表示するだけになりました",
+    "「この案件の単価」表と「客先予算」の欄をなくしました（金額は自分たちで見て決める運用に）",
+    "提示金額・施工原価・その他原価・見込利益の欄はそのままです"
+  ],
   "2026-09-07 r99": [
     "ダッシュボードの「成約率」タイルを外しました（営業分析で確認できます）"
   ],
@@ -1390,15 +1413,15 @@ var DB = {
       status:"new", probability:"C",
       phone_connected_on:null, quote_requested_on:null, survey_scheduled_on:null,
       survey_done_on:null, quote_submitted_on:null, considering_on:null, won_on:null, lost_on:null,
-      amount_presented:null, cost_construction:null, cost_other:null,
+      amount_presented:null, cost_construction:null, cost_other:null, cost_outsource:null,   // cost_outsource: 外注に出す時に協力会社へ払う額（r105）
       next_follow_on:null, next_action:"", next_action_other:"",
       lost_reason:"", lost_reason_note:"",
       lost_detail:"",           // 失注のくわしい状況（振り返り用）
       lost_learn:"",            // 次に活かすこと（改善点）
       survey:null,
-      pre:null,                 // 事前見積の入力（下記 readPreFrom の形）
-      client_budget:null,       // 客先予算（円）
-      client_budget_band:"",    // 客先予算（帯）
+      pre:null,                 // 物件情報 {land_tsubo,build_tsubo,structure,floors,memo}（r102で自動計算を廃止・入れて表示するだけに。旧キーは温存）
+      client_budget:null,       // r102で「客先予算」欄・予算比較を廃止・未使用（旧データ温存のためキーのみ残置）
+      client_budget_band:"",    // r102で廃止・未使用（旧データ温存）
       demo_date:null,           // 解体予定日（届出の締切計算に使用）
       contract_incl:null,       // 請負金額 税込（r69で「届出と事前調査」カード廃止・現在は未使用。旧データ温存のためキーのみ残置）
       reg_tasks:{},             // r69で「届出と事前調査」カード廃止・現在は未使用。旧データ温存のためキーのみ残置
@@ -1406,7 +1429,7 @@ var DB = {
       tag_vacant:false,         // r90で廃止・未使用（旧データ温存）
       proposal:null,            // r90で廃止・未使用（旧データ温存）
       pay_items:[],             // 入金・支払の予定（資金繰り）[{id,dir:'in'|'out',label,amount,due,done,done_on}]
-      prices:[],                // この案件だけの単価表（r64・単価マスタ廃止）[{id,category,category_other,name,unit,unit_price}]
+      prices:[],                // r102で「この案件の単価」表を廃止・未使用（旧データ温存のためキーのみ残置）
       files:[],                 // 添付書類のメタ（本体は IndexedDB）
       created_at: now, updated_at: now
     }, data || {});
@@ -1627,7 +1650,7 @@ var DB = {
       source:"", source_other:"", site_address:"", memo:"", status:"new", probability:"C",
       phone_connected_on:null, quote_requested_on:null, survey_scheduled_on:null, survey_done_on:null,
       quote_submitted_on:null, considering_on:null, won_on:null, lost_on:null,
-      amount_presented:null, cost_construction:null, cost_other:null,
+      amount_presented:null, cost_construction:null, cost_other:null, cost_outsource:null,
       next_follow_on:null, next_action:"", next_action_other:"", lost_reason:"", lost_reason_note:"",
       survey:null, pre:null, client_budget:null, client_budget_band:"", files:[], pay_items:[], handover:"", torihiki:"", property_price:null
     };
@@ -1780,6 +1803,15 @@ var Calc = {
     var p = num(deal.amount_presented);
     if (p === null) return { profit:null, rate:null };
     var cost = (num(deal.cost_construction)||0) + (num(deal.cost_other)||0);
+    var profit = p - cost;
+    var rate = p !== 0 ? (profit / p * 100) : null;
+    return { profit:profit, rate:rate };
+  },
+  // r105: 外注に出す場合の利益 = 提示金額 − 外注費 − その他原価（自社は上の profit()）
+  profitOutsource: function(deal){
+    var p = num(deal.amount_presented);
+    if (p === null) return { profit:null, rate:null };
+    var cost = (num(deal.cost_outsource)||0) + (num(deal.cost_other)||0);
     var profit = p - cost;
     var rate = p !== 0 ? (profit / p * 100) : null;
     return { profit:profit, rate:rate };
@@ -1940,92 +1972,6 @@ var Calc = {
     return { price: FALLBACK_UNIT_PRICE[structure] || FALLBACK_UNIT_PRICE["その他"], fallback:true };
   },
 
-  // 事前見積（社内）: {low, mid, high, structureCost, addonCost, unit, usedFallback, floor}
-  preEstimate: function(deal){
-    var pre = deal.pre;
-    var floor = Calc.predictFloorArea(pre);
-    if (!floor) return null;
-    var st = (pre && pre.structure) || "木造";
-    var prices = deal.prices || [];   // この案件の単価表（r64・単価マスタ廃止）
-    var u = Calc.unitPriceFor(st, prices);
-    // 本体単価: この案件だけの手入力 ＞ この案件の単価表 ＞ 仮単価
-    var unitManual = pre && num(pre.unit_price);
-    if (unitManual && unitManual > 0) u = { price: unitManual, fallback: false };
-    function masterPrice(nm){
-      if (!nm) return null;
-      var row = prices.filter(function(r){ return r.name === nm; })[0];
-      return row ? num(row.unit_price) : null;
-    }
-    var addons = (pre && pre.addons) || {};
-    var addonCost = 0;
-    PRE_ADDONS.forEach(function(a){
-      if (!addons[a.k]) return;
-      var mp = masterPrice(a.priceName);
-      if (a.k === "tight"){ addonCost += (mp !== null ? mp * floor.mid : floor.mid * 10000); return; } // 手壊し割増（単価は円/坪）
-      addonCost += (mp !== null ? mp : a.amount);
-    });
-    // 諸経費・現場経費の率（常に本体の25%。r61で編集欄は廃止。旧データに独自値があればそれを尊重）
-    var ohPct = (pre && num(pre.overhead_pct) > 0) ? num(pre.overhead_pct) : 25;
-    // 産廃処分費: 旧データの手入力（r67で入力欄は廃止）＞ この案件の単価「産廃処分費」(円/坪)×延床 ＞ 0（諸経費に内包）
-    var dispManual = pre && num(pre.disposal);
-    var dispRate = masterPrice("産廃処分費");
-    var disposalMid = (dispManual && dispManual > 0) ? dispManual
-                    : (dispRate !== null ? Math.round(dispRate * floor.mid) : 0);
-    // 運搬費（廃材をトラックで処分場へ）: 旧データの手入力（r67で入力欄は廃止）＞ この案件の単価「運搬費」(円・実額) ＞ 0（処分費の目安に内包）
-    var haulManual = pre && num(pre.haul);
-    var haulRate = masterPrice("運搬費");
-    var haulMid = (haulManual && haulManual > 0) ? haulManual
-                : (haulRate !== null && haulRate > 0) ? haulRate : 0;
-    function pack(fa){
-      var body = fa * u.price;
-      var overhead = body * (ohPct / 100);
-      var disp = floor.mid ? disposalMid * (fa / floor.mid) : disposalMid;
-      return body + overhead + disp + haulMid + addonCost;
-    }
-    return {
-      low:  pack(floor.low)  * 0.95,
-      mid:  pack(floor.mid),
-      high: pack(floor.high) * 1.1,
-      structureCost: floor.mid * u.price,
-      overhead: floor.mid * u.price * (ohPct / 100),
-      overheadPct: ohPct,
-      disposal: disposalMid,
-      disposalAuto: !(dispManual && dispManual > 0) && disposalMid > 0,
-      haul: haulMid,
-      haulAuto: !(haulManual && haulManual > 0) && haulMid > 0,
-      addonCost: addonCost,
-      unit: u.price,
-      usedFallback: u.fallback,
-      floor: floor
-    };
-  },
-
-  // 客先予算（円）: 数値優先、無ければ帯の中央値
-  clientBudgetValue: function(deal){
-    var v = num(deal.client_budget);
-    if (v && v > 0) return v;
-    if (deal.client_budget_band && BUDGET_BAND_MID[deal.client_budget_band]) return BUDGET_BAND_MID[deal.client_budget_band];
-    return null;
-  },
-
-  // 予算 vs 事前見積: { status:'favorable'|'even'|'short'|'unknown', budget, mid, diff, ratio }
-  budgetVsEstimate: function(deal){
-    var est = Calc.preEstimate(deal);
-    var budget = Calc.clientBudgetValue(deal);
-    if (!est || !budget) return { status:"unknown", budget:budget, mid: est?est.mid:null, diff:null, ratio:null };
-    var diff = budget - est.mid;
-    var ratio = budget / est.mid;
-    var status = ratio >= 1.08 ? "favorable" : ratio <= 0.92 ? "short" : "even";
-    return { status:status, budget:budget, mid:est.mid, diff:diff, ratio:ratio };
-  },
-  suggestProbability: function(deal){
-    var bv = Calc.budgetVsEstimate(deal);
-    if (bv.status === "favorable") return "A";
-    if (bv.status === "even") return "B";
-    if (bv.status === "short") return "C";
-    return null;
-  },
-
   priorityScore: function(deal){
     if (!Calc.isActive(deal)) return -99;
     var s = 0;
@@ -2038,9 +1984,6 @@ var Calc = {
     }
     var pr = Calc.profit(deal).profit;
     if (pr !== null && pr >= 3000000) s += 1;
-    var bv = Calc.budgetVsEstimate(deal);
-    if (bv.status === "favorable") s += 2;   // 予算＞事前見積 = 利益が乗りやすい
-    else if (bv.status === "short") s -= 1;
     return s;
   },
   priorityBucket: function(deal){
@@ -2075,26 +2018,6 @@ var Calc = {
     function by(a,b){ return (a.next_follow_on||"") < (b.next_follow_on||"") ? -1 : 1; }
     out.overdue.sort(by); out.today.sort(by); out.upcoming.sort(by);
     return out;
-  },
-
-  estimateCost: function(structure, tsubo, addons, dealPrices){
-    var prices = dealPrices || [];
-    if (!prices.length) return null;
-    function priceOf(name){
-      var row = prices.filter(function(r){ return r.name === name; })[0];
-      return row ? num(row.unit_price) : null;
-    }
-    var total = 0, breakdown = [];
-    var sName = STRUCT_TO_UNITNAME[structure];
-    if (sName && tsubo){
-      var up = priceOf(sName);
-      if (up !== null){ total += up * tsubo; breakdown.push({ label:sName + " × " + tsubo + "坪", amount:up*tsubo }); }
-    }
-    (addons||[]).forEach(function(a){
-      var up = priceOf(a.name);
-      if (up !== null){ var amt = up * (a.qty||1); total += amt; breakdown.push({ label:a.name + " × " + (a.qty||1), amount:amt }); }
-    });
-    return { total:total, breakdown:breakdown };
   }
 };
 
@@ -3267,108 +3190,30 @@ function openListingPaste(){
   });
 }
 
-function preFieldsHTML(pre, opts, dealPrices){
+// r102: 見積の自動計算は廃止。物件の基本項目を「入れて表示するだけ」のブロックに
+function preFieldsHTML(pre){
   pre = pre || {};
-  opts = opts || {};
-  var addons = pre.addons || {};
-  return '<div class="field__hint" style="margin-bottom:10px">不動産情報にある分だけ入力。少ないほど幅が広めに出ます。現地に行かなくてもOK。Googleマップ・ストリートビュー・航空写真で分かる範囲で構いません。</div>'+
+  return '<div class="field__hint" style="margin-bottom:10px">分かる範囲でOK（自動計算はしません）。金額は自分たちで見て決めます。</div>'+
     '<div class="form-grid-2">'+
-      peInput("土地面積","land_tsubo",pre.land_tsubo,{inputmode:"decimal",placeholder:"坪→ 41.5 ／ 平米→ 137㎡",hint:"坪はそのまま数字（41.5）。平米は「137㎡」と単位つきで → 自動で坪に換算"})+
-      peSelectWithOther("構造","structure",STRUCTURES,pre.structure,pre.structure_other)+
-      peInput("本体単価（万円/坪・この案件だけ分かれば）","unit_price",(pre.unit_price ? pre.unit_price/10000 : ""),{type:"number",inputmode:"decimal",hint:"万円で入力（例：4.2 → 42,000円/坪）。空欄なら下の「この案件の単価」→無ければ仮単価を使用"})+
-      peInput("階数","floors",(pre.floors==null?2:pre.floors),{type:"number",inputmode:"numeric"})+
-      '<div><span class="field__label">築年（目安）</span>'+
-        '<div class="segmented" data-peseg="age_band" style="margin-top:8px">'+
-        AGE_BANDS.map(function(a){ return '<button type="button" class="choice'+(((pre.age_band||"unknown")===a.k)?" is-on":"")+'" data-val="'+a.k+'">'+esc(a.label)+'</button>'; }).join("")+
-        '</div></div>'+
-      peInput("築年数（分かれば・年）","building_age",pre.building_age,{type:"number",inputmode:"numeric",hint:"分かれば具体的な年数もメモ（上の「築年」の目安と併用）"})+
-      peInput("実際の延床（登記が取れたら）","known_floor",pre.known_floor,{inputmode:"decimal",placeholder:"坪→ 29 ／ 平米→ 96㎡",hint:"坪はそのまま数字。平米は「96㎡」と単位つきで → 入れるとこの値で確定計算・届出の要否判定にも使用"})+
-      '<div class="col-span"><span class="field__label">現場の割増（写真・Googleで分かる範囲）</span>'+
-        '<div class="row" style="margin-top:8px">'+
-        PRE_ADDONS.map(function(a){ return '<label class="check'+(addons[a.k]?" is-on":"")+'"><input type="checkbox" data-peadd="'+a.k+'"'+(addons[a.k]?" checked":"")+'> '+esc(a.label)+'</label>'; }).join("")+
-        '</div></div>'+
-      '<div class="col-span"><span class="field__label">現地の状況（金額には影響しない・メモ用）</span>'+
-        '<div class="row" style="margin-top:8px">'+
-        [["heavy_machine_ok","重機進入可"],["underground_risk","地中障害物の懸念（古い基礎・ガラ）"]].map(function(c){
-          return '<label class="check'+(pre[c[0]]?" is-on":"")+'"><input type="checkbox" data-peflag="'+c[0]+'"'+(pre[c[0]]?" checked":"")+'> '+esc(c[1])+'</label>';
-        }).join("")+
-        '</div></div>'+
-      '<div class="col-span field"><span class="field__label">その他注意事項</span>'+
-        '<textarea class="input" data-pe="survey_note" placeholder="例：前面道路が一方通行 など">'+esc(pre.survey_note||"")+'</textarea></div>'+
-    '</div>'+
-    '<div id="preResult" style="margin-top:14px">'+preResultHTML({ pre: pre, prices: dealPrices }, opts)+'</div>';
+      peInput("土地の広さ（坪）","land_tsubo",pre.land_tsubo,{inputmode:"decimal",placeholder:"坪→ 41.5 ／ 平米→ 137㎡",hint:"平米は「137㎡」と単位つきで → 自動で坪に換算"})+
+      peInput("建坪（坪）","build_tsubo",pre.build_tsubo,{inputmode:"decimal",placeholder:"坪→ 30 ／ 平米→ 99㎡",hint:"平米は「99㎡」と単位つきで → 自動で坪に換算"})+
+      peSelect("構造","structure",STRUCTURES,pre.structure)+
+      peInput("階数","floors",pre.floors,{type:"number",inputmode:"numeric"})+
+      '<div class="col-span field"><span class="field__label">メモ</span>'+
+        '<textarea class="input" data-pe="memo" placeholder="例：角地・前面道路が狭い・隣家が近い・残置物多め など">'+esc(pre.memo||"")+'</textarea></div>'+
+    '</div>';
 }
 function readPreFrom(root){
   function v(n){ var el=root.querySelector('[data-pe="'+n+'"]'); return el?el.value:""; }
-  function f(n){ var el=root.querySelector('[data-peflag="'+n+'"]'); return el?el.checked:false; }
-  var addons = {};
-  root.querySelectorAll('[data-peadd]').forEach(function(cb){ if (cb.checked) addons[cb.getAttribute("data-peadd")] = true; });
-  var ageEl = root.querySelector('[data-peseg="age_band"] .choice.is-on');
   var pre = {
-    land_tsubo:areaToTsuboInput(v("land_tsubo")), structure:v("structure"), structure_other:v("structure_other"),
-    unit_price:(num(v("unit_price")) ? Math.round(num(v("unit_price")) * 10000) : null),   // 画面は万円/坪、保存は円/坪
-    floors:num(v("floors")), age_band: ageEl ? ageEl.getAttribute("data-val") : "unknown",
-    building_age:num(v("building_age")),
-    known_floor:areaToTsuboInput(v("known_floor")),
-    survey_note:v("survey_note"),
-    heavy_machine_ok:f("heavy_machine_ok"), underground_risk:f("underground_risk"),
-    addons:addons
+    land_tsubo: areaToTsuboInput(v("land_tsubo")),
+    build_tsubo: areaToTsuboInput(v("build_tsubo")),
+    structure: v("structure"),
+    floors: num(v("floors")),
+    memo: v("memo")
   };
-  var any = pre.land_tsubo || pre.structure || pre.known_floor || Object.keys(addons).length;
+  var any = pre.land_tsubo || pre.build_tsubo || pre.structure || pre.floors || pre.memo;
   return any ? pre : null;
-}
-function preResultHTML(deal, opts){
-  opts = opts || {};
-  var est = Calc.preEstimate(deal);
-  if (!est) return '<div class="muted" style="font-size:13px">土地坪数（または実延床）を入れると、予測延床と事前見積が出ます。</div>';
-  var f = est.floor;
-  var st = (deal.pre && deal.pre.structure) || "木造";
-  var floorTxt = f.known ? (Math.round(f.mid)+"坪（登記）")
-    : (Math.round(f.low)+"〜"+Math.round(f.high)+"坪　中心 "+Math.round(f.mid)+"坪");
-  return '<div class="card" style="background:var(--surface-2)">'+
-    '<div class="row" style="gap:26px;flex-wrap:wrap">'+
-      '<div><div class="stat__label">予測 延床面積</div><div class="tnum" style="font-size:21px;font-weight:800">'+esc(floorTxt)+'</div></div>'+
-      '<div><div class="stat__label">事前見積（社内・中心）</div><div class="tnum" style="font-size:21px;font-weight:800;color:var(--primary)">'+yen(est.mid)+'</div>'+
-        '<div class="stat__delta">幅 '+yen(est.low)+' 〜 '+yen(est.high)+'</div></div>'+
-    '</div>'+
-    '<div class="divider"></div>'+
-    '<dl class="kv" style="font-size:12.5px">'+
-      '<dt>本体（'+esc(st)+' '+NF.format(est.unit)+'円/坪 × '+Math.round(f.mid)+'坪）</dt><dd>'+yen(est.structureCost)+'</dd>'+
-      '<dt>諸経費・現場経費（本体の'+est.overheadPct+'%）</dt><dd>'+yen(est.overhead)+'</dd>'+
-      (est.disposal > 0 ? '<dt>産廃処分費'+(est.disposalAuto?'（目安）':'')+'</dt><dd>'+yen(est.disposal)+'</dd>' : '')+
-      (est.haul > 0 ? '<dt>運搬費'+(est.haulAuto?'（目安）':'')+'</dt><dd>'+yen(est.haul)+'</dd>' : '')+
-      '<dt>現場割増</dt><dd>'+yen(est.addonCost)+'</dd>'+
-    '</dl>'+
-    (est.usedFallback ? '<div class="field__hint" style="color:var(--warning);margin-top:8px">※ 仮単価で計算中。上の「本体単価」か、下の「この案件の単価」に「'+esc(STRUCT_TO_UNITNAME[st]||"構造解体単価")+'」を登録すると自動で置き換わります。</div>' : '')+
-    (est.disposal === 0 ? '<div class="field__hint" style="margin-top:8px">産廃処分費は諸経費に含めて計算中。「この案件の単価」に「産廃処分費」（円/坪）を登録すると別建てになり精度が上がります。</div>' : '')+
-    (est.haul === 0 ? '<div class="field__hint" style="margin-top:8px">運搬費は諸経費に含めて計算中。「この案件の単価」に「運搬費」（円）を登録すると別建てになります。</div>' : '')+
-    '<div class="field__hint" style="margin-top:8px">現地を見ると ±20〜30% 動くことがあります（密集地・搬出・地中・時期など）。営業前のあたりを付ける目安としてお使いください。</div>'+
-    (opts.hideApply ? '' : '<div class="row" style="margin-top:10px"><button type="button" class="btn btn--soft btn--sm" data-act="preToPresented">中心額を「提示金額」に入れる</button></div>')+
-  '</div>';
-}
-function budgetBlockHTML(deal){
-  return '<div class="field__hint" style="margin-bottom:8px">客先予算は下の「金額管理」欄で入力します。</div>'+
-    '<div id="budgetJudge">'+budgetJudgeHTML(deal)+'</div>';
-}
-function budgetJudgeHTML(deal){
-  var bv = Calc.budgetVsEstimate(deal);
-  if (bv.status === "unknown") return '<div class="muted" style="font-size:13px">事前見積と客先予算の両方が入ると、ここで比較して打ち手を出します。</div>';
-  var map = {
-    favorable:{ c:"var(--success)", t:"有望：客先予算 ＞ 事前見積", s:"利益が乗りやすい。無理に下げず相場〜やや強気で。スピード・安心を価値付け。見込み度A候補。" },
-    even:     { c:"var(--primary)", t:"ちょうど：客先予算 ≒ 事前見積", s:"勝ちパターン。前提条件を明記して早めにクロージング。見込み度B候補。" },
-    short:    { c:"var(--danger)",  t:"要調整：客先予算 ＜ 事前見積", s:"すぐ値引かない。理由を確認（競合の抜け・範囲の勘違い・現場が実は楽）。範囲を削る提案 or 深追いしない。見込み度C。" }
-  }[bv.status];
-  var sug = Calc.suggestProbability(deal);
-  return '<div class="card" style="border-color:'+map.c+';box-shadow:0 0 0 3px color-mix(in srgb,'+map.c+' 14%,transparent)">'+
-    '<div style="font-weight:800;color:'+map.c+'">'+esc(map.t)+'</div>'+
-    '<div class="row" style="gap:22px;margin:8px 0;flex-wrap:wrap">'+
-      '<div><div class="stat__label">客先予算</div><div class="tnum" style="font-weight:800">'+yen(bv.budget)+'</div></div>'+
-      '<div><div class="stat__label">事前見積(中心)</div><div class="tnum" style="font-weight:800">'+yen(bv.mid)+'</div></div>'+
-      '<div><div class="stat__label">差額</div><div class="tnum" style="font-weight:800;color:'+(bv.diff>=0?"var(--success)":"var(--danger)")+'">'+(bv.diff>=0?"+":"")+yen(bv.diff)+'</div></div>'+
-    '</div>'+
-    '<div class="muted" style="font-size:12.5px">'+esc(map.s)+'</div>'+
-    (sug ? '<div class="row" style="margin-top:10px"><button class="btn btn--soft btn--sm" data-act="applyProb" data-prob="'+sug+'">見込み度を '+sug+' にする</button></div>' : '')+
-  '</div>';
 }
 
 /* ---- 電話/メール/地図 のワンタップ ---------------------------------- */
@@ -3389,8 +3234,9 @@ function probFullLabel(k){
   return "未設定";
 }
 function basicInfoCardHTML(deal){
-  function row(label, val, isMemo){
-    return '<div class="deflist__row"><dt>'+esc(label)+'</dt><dd'+(isMemo?' class="deflist__memo"':'')+'>'+
+  function row(label, val, opts){
+    opts = opts || {};
+    return '<div class="deflist__row'+(opts.full?' deflist__row--full':'')+'"><dt>'+esc(label)+'</dt><dd'+(opts.memo?' class="deflist__memo"':'')+'>'+
       (val ? esc(val) : '<span class="muted">未入力</span>')+'</dd></div>';
   }
   function urlRow(label, val){
@@ -3398,13 +3244,13 @@ function basicInfoCardHTML(deal){
     var dd = href
       ? '<a href="'+esc(href)+'" target="_blank" rel="noopener noreferrer" style="word-break:break-all">'+esc(val)+'</a>'
       : (val ? '<span style="word-break:break-all">'+esc(val)+'</span>' : '<span class="muted">未入力</span>');
-    return '<div class="deflist__row"><dt>'+esc(label)+'</dt><dd>'+dd+'</dd></div>';
+    return '<div class="deflist__row deflist__row--full"><dt>'+esc(label)+'</dt><dd>'+dd+'</dd></div>';
   }
   var summary =
     '<div class="basic-summary">'+
       contactActionsHTML(deal)+
       '<dl class="deflist">'+
-        row("会社名", deal.company_name)+
+        row("会社名", deal.company_name, {full:true})+
         row("担当者", deal.contact_name)+
         row("電話番号", deal.phone)+
         row("メール", deal.email)+
@@ -3412,9 +3258,9 @@ function basicInfoCardHTML(deal){
         row("引き渡し方法", deal.handover)+
         row("取引態様", deal.torihiki)+
         row("物件価格", deal.property_price ? yen(deal.property_price) : "")+
-        row("現場住所", deal.site_address)+
+        row("現場住所", deal.site_address, {full:true})+
         (deal.listing_url ? urlRow("物件ページ", deal.listing_url) : "")+
-        row("メモ", deal.memo, true)+
+        row("メモ", deal.memo, {memo:true, full:true})+
       '</dl>'+
     '</div>';
   var edit =
@@ -3714,178 +3560,6 @@ function wirePayPlanCard(root, id){
   };
   var goB = root.querySelector('[data-goto-cash]');
   if (goB) goB.onclick = function(){ navTo("/cashflow"); };
-}
-
-/* ============================================================
-   案件ごとの単価表（r64・単価マスタ廃止に伴い各案件へ移動）
-   ============================================================ */
-// 新しい案件が引き継ぐ「前回使った単価」を更新
-function syncLastPrices(arr){
-  try { DB.saveSettings({ last_prices: (arr || []).map(function(r){ return Object.assign({}, r); }) }); } catch(e){}
-}
-function dealPricesCardHTML(deal){
-  var rows = (deal.prices || []).slice();
-  var byCat = {};
-  rows.forEach(function(r){ (byCat[r.category] = byCat[r.category] || []).push(r); });
-  var body;
-  if (!rows.length){
-    body = '<div class="field__hint">この案件専用の単価表です。協力会社から見積が出たら、テンプレートか「単価を追加」で登録してください。</div>';
-  } else {
-    body = Object.keys(byCat).map(function(cat){
-      return '<div class="section-label" style="margin-top:10px">'+esc(cat)+'</div>'+
-        '<div class="table-wrap"><table class="table" style="min-width:auto"><thead><tr><th>項目</th><th>単位</th><th class="num">単価</th><th></th></tr></thead><tbody>'+
-        byCat[cat].map(function(r){
-          return '<tr><td style="font-weight:700">'+esc(r.name)+'</td><td>'+esc(r.unit)+'</td><td class="num">'+yen(r.unit_price)+'</td>'+
-            '<td class="num"><button class="btn btn--sm btn--ghost" data-price-edit="'+r.id+'">編集</button> '+
-            '<button class="btn btn--sm btn--danger-soft" data-price-del="'+r.id+'">削除</button></td></tr>';
-        }).join("")+
-        '</tbody></table></div>';
-    }).join("");
-  }
-  return '<div class="disclosure" id="pricesDisc">'+
-    '<button type="button" class="disclosure__btn" id="pricesToggle"><span>この案件の単価　'+
-      (rows.length ? '<span class="muted">'+rows.length+'件</span>' : '<span class="muted">未設定</span>')+
-    '</span>'+icon("chevron","chev")+'</button>'+
-    '<div class="disclosure__body">'+
-      body+
-      '<div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">'+
-        '<button class="btn btn--primary btn--sm" data-price-add="1">単価を追加</button>'+
-      '</div>'+
-      '<div class="section-label" style="margin-top:12px">テンプレートから追加</div><div class="segmented">'+
-        UNIT_TEMPLATES.map(function(t,i){ return '<button type="button" class="choice" data-price-tpl="'+i+'">'+esc(t.name)+'</button>'; }).join("")+
-      '</div>'+
-    '</div>'+
-  '</div>';
-}
-// 新規登録フォーム用（r83・案件がまだ無いのでDBには保存せず、prices配列をその場で編集）
-function newDealPricesCardHTML(prices){
-  var rows = (prices || []).slice();
-  var byCat = {};
-  rows.forEach(function(r){ (byCat[r.category] = byCat[r.category] || []).push(r); });
-  var body;
-  if (!rows.length){
-    body = '<div class="field__hint">テンプレートか「単価を追加」で登録してください。登録すると次回の新規案件にも引き継がれます。</div>';
-  } else {
-    body = Object.keys(byCat).map(function(cat){
-      return '<div class="section-label" style="margin-top:10px">'+esc(cat)+'</div>'+
-        '<div class="table-wrap"><table class="table" style="min-width:auto"><thead><tr><th>項目</th><th>単位</th><th class="num">単価</th><th></th></tr></thead><tbody>'+
-        byCat[cat].map(function(r){
-          return '<tr><td style="font-weight:700">'+esc(r.name)+'</td><td>'+esc(r.unit)+'</td><td class="num">'+yen(r.unit_price)+'</td>'+
-            '<td class="num"><button type="button" class="btn btn--sm btn--ghost" data-nprice-edit="'+r.id+'">編集</button> '+
-            '<button type="button" class="btn btn--sm btn--danger-soft" data-nprice-del="'+r.id+'">削除</button></td></tr>';
-        }).join("")+
-        '</tbody></table></div>';
-    }).join("");
-  }
-  return '<div class="disclosure'+(rows.length?' is-open':'')+'" id="newPricesDisc">'+
-    '<button type="button" class="disclosure__btn" id="newPricesToggle"><span>この案件の単価　'+
-      (rows.length ? '<span class="muted">'+rows.length+'件（前回から引き継ぎ・調整可）</span>' : '<span class="muted">未設定</span>')+
-    '</span>'+icon("chevron","chev")+'</button>'+
-    '<div class="disclosure__body">'+
-      body+
-      '<div class="row" style="margin-top:12px;gap:8px;flex-wrap:wrap">'+
-        '<button type="button" class="btn btn--primary btn--sm" data-nprice-add="1">単価を追加</button>'+
-      '</div>'+
-      '<div class="section-label" style="margin-top:12px">テンプレートから追加</div><div class="segmented">'+
-        UNIT_TEMPLATES.map(function(t,i){ return '<button type="button" class="choice" data-nprice-tpl="'+i+'">'+esc(t.name)+'</button>'; }).join("")+
-      '</div>'+
-    '</div>'+
-  '</div>';
-}
-function openDealPriceDialog(dealId, rowId){
-  var deal = DB.deal(dealId); if (!deal) return;
-  var rows = (deal.prices || []).slice();
-  var row = rowId ? rows.filter(function(r){ return r.id === rowId; })[0] : null;
-  openDialog({
-    title: row ? "単価を編集" : "単価を追加",
-    confirmLabel:"保存",
-    body:'<div class="stack">'+
-      fieldSelectWithOther("カテゴリ","dp_cat",["構造解体","付帯工事","諸経費","その他"],row?row.category:"","dp_cat_other",row?row.category_other:"",{blank:false,otherPlaceholder:"カテゴリ名を入力（必須）"})+
-      fieldInput("項目名","dp_name",row?row.name:"",{required:true,placeholder:"例：木造解体"})+
-      fieldInput("単位","dp_unit",row?row.unit:"式",{placeholder:"坪 / 式 / m / m2 / 本 / 台"})+
-      fieldInput("単価 (円)","dp_price",row?row.unit_price:"",{type:"number",inputmode:"numeric"})+
-      (row ? '<button type="button" class="btn btn--danger-soft btn--sm" data-dp="del" style="margin-top:6px">この単価を削除</button>' : '')+
-    '</div>',
-    onMount:function(body){
-      wireOther(body);
-      var delBtn = body.querySelector('[data-dp="del"]');
-      if (delBtn) delBtn.onclick = function(){
-        var next = rows.filter(function(r){ return r.id !== rowId; });
-        DB.updateDeal(dealId, { prices: next });
-        syncLastPrices(next);
-        var bd = document.getElementById("backdrop"); bd.classList.remove("is-open"); bd.innerHTML = "";
-        toast("削除しました"); render();
-      };
-    },
-    onConfirm:function(body){
-      if (requireField(body.querySelector('[data-field="dp_name"]'), "項目名を入力してください")) return true;
-      if (requireField(body.querySelector('[data-field="dp_price"]'), "単価を入力してください")) return true;
-      if (requireOthers(body)) return true;
-      var name = body.querySelector('[data-field="dp_name"]').value.trim();
-      var cat = body.querySelector('[data-field="dp_cat"]').value || "その他";
-      var catOther = (body.querySelector('[data-field="dp_cat_other"]') || {}).value.trim() || "";
-      var rec = {
-        id: row ? row.id : uid(),
-        category: cat,
-        category_other: cat === "その他" ? catOther : "",
-        name: name,
-        unit: body.querySelector('[data-field="dp_unit"]').value.trim() || "式",
-        unit_price: num(body.querySelector('[data-field="dp_price"]').value)
-      };
-      var next = row ? rows.map(function(r){ return r.id === row.id ? rec : r; }) : rows.concat([rec]);
-      DB.updateDeal(dealId, { prices: next });
-      syncLastPrices(next);
-      toast("保存しました"); render();
-    }
-  });
-}
-function wireDealPricesCard(root, id){
-  var disc = root.querySelector("#pricesDisc");
-  if (disc){
-    var tog = root.querySelector("#pricesToggle");
-    if (tog) tog.onclick = function(){ disc.classList.toggle("is-open"); };
-  }
-  root.querySelectorAll('[data-price-edit]').forEach(function(b){
-    b.onclick = function(){ openDealPriceDialog(id, b.getAttribute("data-price-edit")); };
-  });
-  root.querySelectorAll('[data-price-del]').forEach(function(b){
-    b.onclick = function(){
-      var deal = DB.deal(id);
-      var rows = (deal.prices || []);
-      var r = rows.filter(function(x){ return x.id === b.getAttribute("data-price-del"); })[0];
-      confirmDialog("本当に削除しますか？", (r?r.name:"この単価")+" を削除します。", "削除する", function(){
-        var next = rows.filter(function(x){ return x.id !== b.getAttribute("data-price-del"); });
-        DB.updateDeal(id, { prices: next });
-        syncLastPrices(next);
-        toast("削除しました"); render();
-      }, true);
-    };
-  });
-  var addB = root.querySelector('[data-price-add]');
-  if (addB) addB.onclick = function(){ openDealPriceDialog(id, null); };
-  root.querySelectorAll('[data-price-tpl]').forEach(function(b){
-    b.onclick = function(){
-      var t = UNIT_TEMPLATES[Number(b.getAttribute("data-price-tpl"))];
-      openDialog({
-        title:"「"+t.name+"」を追加", confirmLabel:"追加",
-        body:'<div class="stack">'+
-          fieldInput("項目名","tpl_name",t.name,{required:true,placeholder:"例：仮設トイレ"})+
-          fieldInput("単位","tpl_unit",t.unit,{placeholder:"坪 / 式 / m / m2 / m3 / 本 / 台"})+
-          fieldInput("単価 (円)","tpl_price","",{type:"number",inputmode:"numeric"})+
-        '</div>',
-        onConfirm:function(body){
-          if (requireField(body.querySelector('[data-field="tpl_name"]'), "項目名を入力してください")) return true;
-          if (requireField(body.querySelector('[data-field="tpl_price"]'), "単価を入力してください")) return true;
-          var deal = DB.deal(id);
-          var rows = (deal.prices || []).slice();
-          rows.push({ id:uid(), category:t.category, category_other:"", name:body.querySelector('[data-field="tpl_name"]').value.trim(), unit:body.querySelector('[data-field="tpl_unit"]').value.trim()||t.unit, unit_price:num(body.querySelector('[data-field="tpl_price"]').value) });
-          DB.updateDeal(id, { prices: rows });
-          syncLastPrices(rows);
-          toast("追加しました"); render();
-        }
-      });
-    };
-  });
 }
 
 // 全案件の未処理の予定を月ごとに集計
@@ -4266,7 +3940,7 @@ function openEventEditDialog(dealId, eventId){
 
 // 「137㎡」等で入力されたら、その場で坪の数値に書き換える（視覚フィードバック）
 function wireAreaFields(root, after){
-  ["land_tsubo","known_floor"].forEach(function(name){
+  ["land_tsubo","build_tsubo"].forEach(function(name){
     var el = root.querySelector('[data-pe="'+name+'"]');
     if (!el) return;
     el.addEventListener("change", function(){
@@ -4278,93 +3952,23 @@ function wireAreaFields(root, after){
     });
   });
 }
+// r102: 物件情報は「入れて表示するだけ」。変更時に保存するだけ（自動計算なし）
 function wirePreEstimate(root, id){
-  function refresh(){
-    var d0 = DB.deal(id);
-    var pre = readPreFrom(root);
-    DB.updateDeal(id, { pre: pre });
-    var d1 = DB.deal(id);
-    var pr = root.querySelector("#preResult");   if (pr){ pr.innerHTML = preResultHTML(d1); pr.classList.remove("pe-updated"); void pr.offsetWidth; pr.classList.add("pe-updated"); }
-    var bj = root.querySelector("#budgetJudge"); if (bj) bj.innerHTML = budgetJudgeHTML(d1);
+  function save(){
+    var merged = Object.assign({}, DB.deal(id).pre || {}, readPreFrom(root) || {});
+    DB.updateDeal(id, { pre: merged });
   }
-  wireAreaFields(root, refresh);
-  root.querySelectorAll('[data-pe]').forEach(function(el){ el.addEventListener("change", refresh); });
-  root.querySelectorAll('[data-peadd]').forEach(function(el){
-    el.addEventListener("change", function(){ el.closest(".check").classList.toggle("is-on", el.checked); refresh(); });
-  });
-  root.querySelectorAll('[data-peflag]').forEach(function(el){
-    el.addEventListener("change", function(){ el.closest(".check").classList.toggle("is-on", el.checked); refresh(); });
-  });
-  root.querySelectorAll('[data-peseg="age_band"] .choice').forEach(function(b){
-    b.onclick = function(){
-      root.querySelectorAll('[data-peseg="age_band"] .choice').forEach(function(x){ x.classList.remove("is-on"); });
-      b.classList.add("is-on"); refresh();
-    };
-  });
-  root.querySelectorAll('[data-field="client_budget"]').forEach(function(el){
-    el.addEventListener("change", function(){
-      DB.updateDeal(id, { client_budget: num(el.value) });
-      var bj = root.querySelector("#budgetJudge"); if (bj) bj.innerHTML = budgetJudgeHTML(DB.deal(id));
-    });
-  });
-  // 実際の延床が変わったら「届出と事前調査」(80㎡判定)も再計算して出す。change はフォーカスが外れた時だけ発火するので安全。
-  root.querySelectorAll('[data-pe="known_floor"]').forEach(function(el){
-    el.addEventListener("change", function(){ render(); });
-  });
-  root.querySelectorAll(".js-paste-listing").forEach(function(b){ b.onclick = openListingPaste; });
-  // 毎回の再描画で wirePreEstimate が呼ばれるため addEventListener だと重複登録される。
-  // onclick 代入なら再描画のたびに前回ぶんを上書きするので、1個だけになる。
-  root.onclick = function(e){
-    var t = e.target.closest("[data-act]"); if (!t) return;
-    if (t.getAttribute("data-act") === "preToPresented"){
-      var est = Calc.preEstimate(DB.deal(id)); if (!est) return;
-      DB.updateDeal(id, { amount_presented: Math.round(est.mid) });
-      setMoneyField(root, "amount_presented", Math.round(est.mid));
-      var d2 = DB.deal(id), p2 = Calc.profit(d2);
-      var mp = root.querySelector("#mpProfit"), mr = root.querySelector("#mpRate");
-      if (mp){ mp.textContent = yen(p2.profit); mp.style.color = (p2.profit!==null&&p2.profit<0)?"var(--danger)":"var(--success)"; }
-      if (mr) mr.textContent = pct(p2.rate,1);
-      toast("提示金額に反映しました");
-    }
-    if (t.getAttribute("data-act") === "applyProb"){
-      DB.updateDeal(id, { probability: t.getAttribute("data-prob") });
-      toast("見込み度を更新しました"); render();
-      var pd = document.getElementById("preDisc"); if (pd) pd.classList.add("is-open");
-    }
-  };
+  wireAreaFields(root, save);
+  root.querySelectorAll('[data-pe]').forEach(function(el){ el.addEventListener("change", save); });
 }
-// 新規登録フォーム用（DB未作成・予算比較なし）
-function wirePreEstimateForm(root, getPrices){
-  function refresh(){
-    var el = root.querySelector("#preResult");
-    if (el){ el.innerHTML = preResultHTML({ pre: readPreFrom(root), prices: (getPrices ? getPrices() : null) }, { hideApply:true }); el.classList.remove("pe-updated"); void el.offsetWidth; el.classList.add("pe-updated"); }
-  }
-  wireAreaFields(root, refresh);
-  root.querySelectorAll('[data-pe]').forEach(function(el){ el.addEventListener("change", refresh); });
-  root.querySelectorAll('[data-peadd]').forEach(function(el){
-    el.addEventListener("change", function(){ el.closest(".check").classList.toggle("is-on", el.checked); refresh(); });
-  });
-  root.querySelectorAll('[data-peflag]').forEach(function(el){
-    el.addEventListener("change", function(){ el.closest(".check").classList.toggle("is-on", el.checked); refresh(); });
-  });
-  root.querySelectorAll('[data-peseg="age_band"] .choice').forEach(function(b){
-    b.onclick = function(){
-      root.querySelectorAll('[data-peseg="age_band"] .choice').forEach(function(x){ x.classList.remove("is-on"); });
-      b.classList.add("is-on"); refresh();
-    };
-  });
-  root.querySelectorAll(".js-paste-listing").forEach(function(b){ b.onclick = openListingPaste; });
-  return refresh;   // 呼び出し側から手動で再計算できるように（単価表を編集したときなど）
+// 新規登録フォーム用（DB未作成。doCreate 時に readPreFrom で読む）
+function wirePreEstimateForm(root){
+  wireAreaFields(root);
 }
 
 function ViewDealNew(){
-  // r83: この案件の単価表を登録前からフル編集できるように。前回使った単価を初期値としてコピー
-  var newPrices = (function(){
-    try { return (DB.settings().last_prices || []).map(function(r){ return Object.assign({}, r); }); }
-    catch(e){ return []; }
-  })();
   var html =
-    '<div class="page-head only-desktop"><div><h1>新規案件登録</h1><p>まずは最小限の項目だけ。事前見積は必要になってから。</p></div></div>'+
+    '<div class="page-head only-desktop"><div><h1>新規案件登録</h1><p>まずは最小限の項目だけ。あとから変更できます。</p></div></div>'+
     '<form id="newForm" class="stack" style="max-width:760px" novalidate>'+
       '<div class="card"><div class="section-label">基本情報</div>'+
         '<div class="form-grid-2">'+
@@ -4384,12 +3988,10 @@ function ViewDealNew(){
         '</div>'+
       '</div>'+
 
-      '<div id="newPricesWrap">'+newDealPricesCardHTML(newPrices)+'</div>'+
-
       '<div class="disclosure is-open" id="preDisc">'+
-        '<button type="button" class="disclosure__btn" id="preToggle">物件情報・見積もり（任意・分かる範囲でOK）'+icon("chevron","chev")+'</button>'+
+        '<button type="button" class="disclosure__btn" id="preToggle">物件情報（任意・分かる範囲でOK）'+icon("chevron","chev")+'</button>'+
         '<div class="disclosure__body">'+
-          preFieldsHTML(null, { hideApply:true, hidePaste:true }, newPrices)+
+          preFieldsHTML(null)+
           '<div class="divider"></div>'+
           '<div><span class="field__label">見込み度</span>'+
             '<div class="segmented" data-seg="probability" style="margin-top:8px">'+
@@ -4404,15 +4006,23 @@ function ViewDealNew(){
       '<div class="card"><div class="section-label">金額管理</div>'+
         '<div class="form-grid-2">'+
           moneyField("提示金額","amount_presented","")+
-          moneyField("施工原価","cost_construction","")+
-          moneyField("その他原価","cost_other","",{hint:"諸経費・処分費など"})+
-          '<div></div>'+
+          moneyField("施工原価（自社でやる時）","cost_construction","")+
+          moneyField("外注費（協力会社に払う額）","cost_outsource","")+
+          moneyField("その他原価","cost_other","",{hint:"諸経費・処分費など（両方に共通）"})+
         '</div>'+
         '<div class="field__hint" style="margin-top:2px">分かる範囲でOK。あとから変更できます。</div>'+
         '<div class="divider"></div>'+
-        '<div class="row" style="gap:24px">'+
-          '<div><div class="stat__label">見込利益（自動）</div><div class="stat__value tnum" id="mpProfit">—</div></div>'+
-          '<div><div class="stat__label">利益率（自動）</div><div class="stat__value tnum" id="mpRate">—</div></div>'+
+        '<div class="profit2">'+
+          '<div class="profit2__box">'+
+            '<div class="profit2__head">自社で受ける</div>'+
+            '<div class="profit2__row"><span class="profit2__k">見込利益</span><span class="profit2__v" id="mpProfit">—</span></div>'+
+            '<div class="profit2__row"><span class="profit2__k">利益率</span><span class="profit2__v" id="mpRate">—</span></div>'+
+          '</div>'+
+          '<div class="profit2__box">'+
+            '<div class="profit2__head">外注に出す</div>'+
+            '<div class="profit2__row"><span class="profit2__k">見込利益</span><span class="profit2__v" id="mpProfitOut">—</span></div>'+
+            '<div class="profit2__row"><span class="profit2__k">利益率</span><span class="profit2__v" id="mpRateOut">—</span></div>'+
+          '</div>'+
         '</div>'+
       '</div>'+
 
@@ -4454,7 +4064,7 @@ function ViewDealNew(){
           listing_url:v("listing_url"), handover:v("handover"), torihiki:v("torihiki"), property_price:num(v("property_price")),
           created_on:v("created_on")||isoToday(), probability:prob,
           next_follow_on: isoDate(fd), next_action: v("phone") ? "電話" : "メール",
-          amount_presented:num(v("amount_presented")), cost_construction:num(v("cost_construction")), cost_other:num(v("cost_other"))
+          amount_presented:num(v("amount_presented")), cost_construction:num(v("cost_construction")), cost_other:num(v("cost_other")), cost_outsource:num(v("cost_outsource"))
         };
         var pre = null;
         try { pre = readPreFrom(root); } catch(e){}
@@ -4469,11 +4079,6 @@ function ViewDealNew(){
         }
         var patch = {};
         if (pre) patch.pre = pre;
-        // r83: この画面で編集した単価表をそのまま登録。次回の新規案件の初期値も更新
-        try {
-          patch.prices = newPrices.map(function(r){ return Object.assign({}, r); });
-          syncLastPrices(newPrices);
-        } catch(e){}
         if (Object.keys(patch).length){ try { DB.updateDeal(deal.id, patch); } catch(e){} }
         toast("案件を登録しました（3日後に追客予定をセット）");
         setTimeout(function(){ navTo("/deals/" + deal.id); }, 160);
@@ -4519,105 +4124,23 @@ function ViewDealNew(){
         });
         var pTog = root.querySelector("#preToggle"), pDisc = root.querySelector("#preDisc");
         if (pTog && pDisc) pTog.onclick = function(){ pDisc.classList.toggle("is-open"); };
-        var refreshPreEst = wirePreEstimateForm(root, function(){ return newPrices; });
+        wirePreEstimateForm(root);
         wireSourceOther(root);
         wireDateFields(root);
         wireMoneyFields(root);
 
-        // この案件の単価表（登録前・DB未保存。newPrices 配列をその場で編集して #newPricesWrap を差し替える）
-        function refreshNewPrices(){
-          var wrap = root.querySelector("#newPricesWrap");
-          if (wrap){ wrap.innerHTML = newDealPricesCardHTML(newPrices); wireNewPrices(); }
-          if (refreshPreEst) refreshPreEst();   // 単価を変えたら事前見積のプレビューも更新
-        }
-        function openNewPriceDialog(rowId){
-          var row = rowId ? newPrices.filter(function(r){ return r.id === rowId; })[0] : null;
-          openDialog({
-            title: row ? "単価を編集" : "単価を追加", confirmLabel:"保存",
-            body:'<div class="stack">'+
-              fieldSelectWithOther("カテゴリ","dp_cat",["構造解体","付帯工事","諸経費","その他"],row?row.category:"","dp_cat_other",row?row.category_other:"",{blank:false,otherPlaceholder:"カテゴリ名を入力（必須）"})+
-              fieldInput("項目名","dp_name",row?row.name:"",{required:true,placeholder:"例：木造解体"})+
-              fieldInput("単位","dp_unit",row?row.unit:"式",{placeholder:"坪 / 式 / m / m2 / 本 / 台"})+
-              fieldInput("単価 (円)","dp_price",row?row.unit_price:"",{type:"number",inputmode:"numeric"})+
-              (row ? '<button type="button" class="btn btn--danger-soft btn--sm" data-dp="del" style="margin-top:6px">この単価を削除</button>' : '')+
-            '</div>',
-            onMount:function(body){
-              wireOther(body);
-              var delBtn = body.querySelector('[data-dp="del"]');
-              if (delBtn) delBtn.onclick = function(){
-                newPrices = newPrices.filter(function(r){ return r.id !== rowId; });
-                var bd = document.getElementById("backdrop"); bd.classList.remove("is-open"); bd.innerHTML = "";
-                toast("削除しました"); refreshNewPrices();
-              };
-            },
-            onConfirm:function(body){
-              if (requireField(body.querySelector('[data-field="dp_name"]'), "項目名を入力してください")) return true;
-              if (requireField(body.querySelector('[data-field="dp_price"]'), "単価を入力してください")) return true;
-              if (requireOthers(body)) return true;
-              var cat = body.querySelector('[data-field="dp_cat"]').value || "その他";
-              var catOther = (body.querySelector('[data-field="dp_cat_other"]') || {}).value.trim() || "";
-              var rec = {
-                id: row ? row.id : uid(), category: cat, category_other: cat === "その他" ? catOther : "",
-                name: body.querySelector('[data-field="dp_name"]').value.trim(),
-                unit: body.querySelector('[data-field="dp_unit"]').value.trim() || "式",
-                unit_price: num(body.querySelector('[data-field="dp_price"]').value)
-              };
-              newPrices = row ? newPrices.map(function(r){ return r.id === row.id ? rec : r; }) : newPrices.concat([rec]);
-              toast("保存しました"); refreshNewPrices();
-            }
-          });
-        }
-        function wireNewPrices(){
-          var disc = root.querySelector("#newPricesDisc");
-          if (disc){
-            var tog = root.querySelector("#newPricesToggle");
-            if (tog) tog.onclick = function(){ disc.classList.toggle("is-open"); };
-          }
-          root.querySelectorAll('[data-nprice-edit]').forEach(function(b){
-            b.onclick = function(){ openNewPriceDialog(b.getAttribute("data-nprice-edit")); };
-          });
-          root.querySelectorAll('[data-nprice-del]').forEach(function(b){
-            b.onclick = function(){
-              var rid = b.getAttribute("data-nprice-del");
-              var r = newPrices.filter(function(x){ return x.id === rid; })[0];
-              confirmDialog("本当に削除しますか？", (r?r.name:"この単価")+" を削除します。", "削除する", function(){
-                newPrices = newPrices.filter(function(x){ return x.id !== rid; });
-                toast("削除しました"); refreshNewPrices();
-              }, true);
-            };
-          });
-          var addB = root.querySelector('[data-nprice-add]');
-          if (addB) addB.onclick = function(){ openNewPriceDialog(null); };
-          root.querySelectorAll('[data-nprice-tpl]').forEach(function(b){
-            b.onclick = function(){
-              var t = UNIT_TEMPLATES[Number(b.getAttribute("data-nprice-tpl"))];
-              openDialog({
-                title:"「"+t.name+"」を追加", confirmLabel:"追加",
-                body:'<div class="stack">'+
-                  fieldInput("項目名","tpl_name",t.name,{required:true,placeholder:"例：仮設トイレ"})+
-                  fieldInput("単位","tpl_unit",t.unit,{placeholder:"坪 / 式 / m / m2 / m3 / 本 / 台"})+
-                  fieldInput("単価 (円)","tpl_price","",{type:"number",inputmode:"numeric"})+
-                '</div>',
-                onConfirm:function(body){
-                  if (requireField(body.querySelector('[data-field="tpl_name"]'), "項目名を入力してください")) return true;
-                  if (requireField(body.querySelector('[data-field="tpl_price"]'), "単価を入力してください")) return true;
-                  newPrices = newPrices.concat([{ id:uid(), category:t.category, category_other:"", name:body.querySelector('[data-field="tpl_name"]').value.trim(), unit:body.querySelector('[data-field="tpl_unit"]').value.trim()||t.unit, unit_price:num(body.querySelector('[data-field="tpl_price"]').value) }]);
-                  toast("追加しました"); refreshNewPrices();
-                }
-              });
-            };
-          });
-        }
-        wireNewPrices();
-
-        // 金額管理（見込利益・利益率はその場で計算。案件はまだ無いのでDBには保存しない）
+        // 金額管理（自社 / 外注 の利益をその場で計算。案件はまだ無いのでDBには保存しない）
         function refreshProfit(){
-          var p = Calc.profit({ amount_presented:num(v("amount_presented")), cost_construction:num(v("cost_construction")), cost_other:num(v("cost_other")) });
-          var mp = root.querySelector("#mpProfit"), mr = root.querySelector("#mpRate");
-          if (mp){ mp.textContent = p.profit===null ? "—" : yen(p.profit); mp.style.color = (p.profit!==null&&p.profit<0)?"var(--danger)":"var(--success)"; }
-          if (mr) mr.textContent = p.rate===null ? "—" : pct(p.rate,1);
+          var base = { amount_presented:num(v("amount_presented")), cost_construction:num(v("cost_construction")), cost_other:num(v("cost_other")), cost_outsource:num(v("cost_outsource")) };
+          function set(idV, idR, r){
+            var mp = root.querySelector(idV), mr = root.querySelector(idR);
+            if (mp){ mp.textContent = r.profit===null ? "—" : yen(r.profit); mp.style.color = (r.profit!==null&&r.profit<0)?"var(--danger)":"var(--success)"; }
+            if (mr) mr.textContent = r.rate===null ? "—" : pct(r.rate,1);
+          }
+          set("#mpProfit", "#mpRate", Calc.profit(base));
+          set("#mpProfitOut", "#mpRateOut", Calc.profitOutsource(base));
         }
-        ["amount_presented","cost_construction","cost_other"].forEach(function(n){
+        ["amount_presented","cost_construction","cost_other","cost_outsource"].forEach(function(n){
           var el = root.querySelector('[data-field="'+n+'"]');
           if (el) el.addEventListener("change", refreshProfit);
         });
@@ -4723,47 +4246,46 @@ function ViewDealDetail(id){
   '</div>';
 
 
-  // 案件ごとの単価表
-  html += dealPricesCardHTML(deal);
-
-  // 事前見積（社内） ＋ 客先予算比較
-  var preEst = Calc.preEstimate(deal);
-  var preSummary = preEst ? '<span class="muted">'+yen(preEst.mid)+(Calc.clientBudgetValue(deal)?' / 予算 '+yen(Calc.clientBudgetValue(deal)):'')+'</span>' : '';
+  // 物件情報（入れて表示するだけ・自動計算なし） ＋ 見込み度
+  var preMemo = (deal.pre && deal.pre.memo) ? '<span class="muted" style="font-weight:600">'+esc(String(deal.pre.memo).slice(0,18))+(String(deal.pre.memo).length>18?"…":"")+'</span>' : '';
   html += '<div class="disclosure" id="preDisc">'+
-    '<button type="button" class="disclosure__btn" id="preToggle"><span>物件情報・見積もり・客先予算　'+preSummary+'　'+probBadge(deal.probability)+'</span>'+icon("chevron","chev")+'</button>'+
+    '<button type="button" class="disclosure__btn" id="preToggle"><span>物件情報　'+preMemo+'　'+probBadge(deal.probability)+'</span>'+icon("chevron","chev")+'</button>'+
     '<div class="disclosure__body">'+
-      '<div class="section-label">① 物件情報・見積もり</div>'+
-      preFieldsHTML(deal.pre, null, deal.prices)+
+      preFieldsHTML(deal.pre)+
       '<div class="row" style="margin-top:10px">'+
         '<button type="button" class="btn btn--soft btn--sm" data-act="addlMemo">追加費用の「事前の取り決めメモ」を作る</button>'+
       '</div>'+
       '<div class="divider"></div>'+
-      '<div class="section-label">② 客先予算を聞いて比較</div>'+
-      budgetBlockHTML(deal)+
-      '<div class="divider"></div>'+
-      '<div class="section-label">③ 見込み度</div>'+
+      '<div class="section-label">見込み度</div>'+
       '<div class="segmented" data-seg2="probability" style="margin-top:4px">'+
         PROBABILITIES.map(function(p){
           return '<button type="button" class="choice'+(deal.probability===p.k?" is-on":"")+'" data-val="'+p.k+'">'+p.k+'：'+esc(p.label)+'</button>';
         }).join("")+
       '</div>'+
-      '<div class="field__hint" style="margin-top:6px">上の②で「見込み度を◯にする」を押すと目安が入ります。手で選び直してもOK。</div>'+
     '</div></div>';
 
-  // Money panel
+  // Money panel（自社で受ける場合 / 外注に出す場合 の利益を並べて表示）
+  var prO = Calc.profitOutsource(deal);
   html += '<div class="card"><div class="section-label">金額管理</div>'+
     '<div class="form-grid-2">'+
       moneyField("提示金額","amount_presented",deal.amount_presented)+
-      moneyField("施工原価","cost_construction",deal.cost_construction)+
-      moneyField("その他原価","cost_other",deal.cost_other,{hint:"諸経費・処分費など"})+
-      moneyField("客先予算","client_budget",deal.client_budget,{placeholder:"例) 300万 / 3000000",hint:"お客さんが出せる金額。だいたいで可。"})+
+      moneyField("施工原価（自社でやる時）","cost_construction",deal.cost_construction)+
+      moneyField("外注費（協力会社に払う額）","cost_outsource",deal.cost_outsource)+
+      moneyField("その他原価","cost_other",deal.cost_other,{hint:"諸経費・処分費など（両方に共通で差引き）"})+
     '</div>'+
     '<div class="divider"></div>'+
-    '<div class="row" style="gap:24px">'+
-      '<div><div class="stat__label">見込利益（自動）</div><div class="stat__value tnum" id="mpProfit" style="color:'+(pr.profit!==null&&pr.profit<0?"var(--danger)":"var(--success)")+'">'+yen(pr.profit)+'</div></div>'+
-      '<div><div class="stat__label">利益率（自動）</div><div class="stat__value tnum" id="mpRate">'+pct(pr.rate,1)+'</div></div>'+
+    '<div class="profit2">'+
+      '<div class="profit2__box">'+
+        '<div class="profit2__head">自社で受ける</div>'+
+        '<div class="profit2__row"><span class="profit2__k">見込利益</span><span class="profit2__v" id="mpProfit" style="color:'+(pr.profit!==null&&pr.profit<0?"var(--danger)":"var(--success)")+'">'+yen(pr.profit)+'</span></div>'+
+        '<div class="profit2__row"><span class="profit2__k">利益率</span><span class="profit2__v" id="mpRate">'+pct(pr.rate,1)+'</span></div>'+
+      '</div>'+
+      '<div class="profit2__box">'+
+        '<div class="profit2__head">外注に出す</div>'+
+        '<div class="profit2__row"><span class="profit2__k">見込利益</span><span class="profit2__v" id="mpProfitOut" style="color:'+(prO.profit!==null&&prO.profit<0?"var(--danger)":"var(--success)")+'">'+yen(prO.profit)+'</span></div>'+
+        '<div class="profit2__row"><span class="profit2__k">利益率</span><span class="profit2__v" id="mpRateOut">'+pct(prO.rate,1)+'</span></div>'+
+      '</div>'+
     '</div>'+
-    ((deal.prices||[]).length ? '<div class="row" style="margin-top:12px"><button class="btn btn--soft btn--sm" data-act="estimate">登録した単価から概算原価</button></div>' : '')+
   '</div>';
 
   // 入金・支払の予定（資金繰り）
@@ -4790,20 +4312,20 @@ function ViewDealDetail(id){
         var val = (el.type === "number" || el.getAttribute("data-num")) ? num(el.value) : el.value;
         var patch = {}; patch[f] = val;
         DB.updateDeal(id, patch);
-        // live recompute money panel
-        var d2 = DB.deal(id); var p2 = Calc.profit(d2);
-        var mp = root.querySelector("#mpProfit"), mr = root.querySelector("#mpRate");
-        if (mp){
-          var prevMp = mp.textContent;
-          mp.textContent = yen(p2.profit);
-          mp.style.color = (p2.profit!==null&&p2.profit<0)?"var(--danger)":"var(--success)";
-          if (mp.textContent !== prevMp) flashValue(mp);
+        // live recompute money panel（自社 / 外注 の両方）
+        var d2 = DB.deal(id);
+        function paintVal(el, txt, neg){
+          if (!el) return;
+          var prev = el.textContent;
+          el.textContent = txt;
+          if (typeof neg === "boolean") el.style.color = neg ? "var(--danger)" : "var(--success)";
+          if (el.textContent !== prev) flashValue(el);
         }
-        if (mr){
-          var prevMr = mr.textContent;
-          mr.textContent = pct(p2.rate,1);
-          if (mr.textContent !== prevMr) flashValue(mr);
-        }
+        var p2 = Calc.profit(d2), pO2 = Calc.profitOutsource(d2);
+        paintVal(root.querySelector("#mpProfit"), yen(p2.profit), p2.profit!==null&&p2.profit<0);
+        paintVal(root.querySelector("#mpRate"), pct(p2.rate,1));
+        paintVal(root.querySelector("#mpProfitOut"), yen(pO2.profit), pO2.profit!==null&&pO2.profit<0);
+        paintVal(root.querySelector("#mpRateOut"), pct(pO2.rate,1));
         toast("保存しました");
       }
       autoFields.forEach(function(el){ el.addEventListener("change", function(){ saveField(el); }); });
@@ -4815,14 +4337,13 @@ function ViewDealDetail(id){
       var tlDisc = root.querySelector("#tlDisc");
       if (tlDisc) root.querySelector("#tlToggle").onclick = function(){ tlDisc.classList.toggle("is-open"); };
 
-      // 事前見積・客先予算
+      // 物件情報（入れて表示するだけ）
       var preDisc = root.querySelector("#preDisc");
       if (preDisc) root.querySelector("#preToggle").onclick = function(){ preDisc.classList.toggle("is-open"); };
       wirePreEstimate(root, id);
       wireContactLog(root, id);
       wireFilesCard(root, id);
       wirePayPlanCard(root, id);
-      wireDealPricesCard(root, id);
 
       // 基本情報: まとめ表示 ⇄ 編集
       var basicCard = root.querySelector("#basicCard");
@@ -4914,10 +4435,6 @@ function ViewDealDetail(id){
       var addlBtn = root.querySelector('[data-act="addlMemo"]');
       if (addlBtn) addlBtn.onclick = function(){ openAddlMemoDialog(id); };
 
-      // estimate from unit master
-      var est = root.querySelector('[data-act="estimate"]');
-      if (est) est.onclick = function(){ openEstimateDialog(id); };
-
       // delete （ヘッダー右上のゴミ箱は #view の外にあるので document から拾う）
       document.querySelectorAll('[data-act="delete"]').forEach(function(b){
         b.onclick = function(){
@@ -4995,56 +4512,6 @@ function openAddlMemoDialog(dealId){
       var s = Object.assign({}, d.survey || {}, { addl_memo_on: isoToday() });
       DB.updateDeal(dealId, { survey: s });
       toast("連絡ログに記録しました"); render();
-    }
-  });
-}
-
-function openEstimateDialog(dealId){
-  var deal = DB.deal(dealId);
-  var prices = deal.prices || [];   // この案件の単価表（r64・単価マスタ廃止）
-  var addonRows = prices.filter(function(r){ return r.category !== "構造解体"; });
-  var pre = deal.pre || {};   // r65: 「物件の詳しい情報」を事前見積に統合
-  openDialog({
-    title:"概算施工原価",
-    confirmLabel:"施工原価に反映",
-    body:'<div class="stack">'+
-      '<div class="form-grid">'+
-        fieldSelectWithOther("構造","est_structure",STRUCTURES,pre.structure||"","est_structure_other","",{otherPlaceholder:"構造名を入力"})+
-        fieldInput("坪数","est_tsubo",pre.known_floor||"",{type:"number",inputmode:"decimal"})+
-      '</div>'+
-      '<div><span class="field__label">付帯工事</span><div class="stack" style="margin-top:8px;gap:8px">'+
-        (addonRows.length ? addonRows.map(function(r){
-          return '<label class="check"><input type="checkbox" data-addon="'+r.id+'"> '+esc(r.name)+
-            ' <span class="muted" style="margin-left:auto">'+yen(r.unit_price)+' / '+esc(r.unit)+'</span>'+
-            ' <input class="input" style="width:64px;min-height:34px" type="number" value="1" data-qty="'+r.id+'"></label>';
-        }).join("") : '<span class="muted">付帯工事の単価が未登録です</span>')+
-      '</div></div>'+
-      '<div class="card" style="background:var(--surface-2)"><div class="section-label">計算結果</div><div id="estResult" class="tnum" style="font-size:20px;font-weight:800">¥0</div><div id="estBreak" class="muted" style="font-size:12px;margin-top:6px"></div></div>'+
-    '</div>',
-    onMount:function(body){
-      function recalc(){
-        var st = body.querySelector('[data-field="est_structure"]').value;
-        var ts = num(body.querySelector('[data-field="est_tsubo"]').value);
-        var addons = [];
-        body.querySelectorAll("[data-addon]").forEach(function(cb){
-          if (cb.checked){
-            var row = prices.filter(function(r){ return r.id === cb.getAttribute("data-addon"); })[0];
-            var qty = num(body.querySelector('[data-qty="'+cb.getAttribute("data-addon")+'"]').value) || 1;
-            addons.push({ name:row.name, qty:qty });
-          }
-        });
-        var res = Calc.estimateCost(st, ts, addons, prices) || { total:0, breakdown:[] };
-        body.querySelector("#estResult").textContent = yen(res.total);
-        body.querySelector("#estBreak").innerHTML = res.breakdown.map(function(b){ return esc(b.label)+" = "+yen(b.amount); }).join("<br>");
-        body._estTotal = res.total;
-      }
-      body.querySelectorAll("input,select").forEach(function(el){ el.addEventListener("input", recalc); el.addEventListener("change", recalc); });
-      wireOther(body);
-      recalc();
-    },
-    onConfirm:function(body){
-      DB.updateDeal(dealId, { cost_construction: Math.round(body._estTotal || 0) });
-      toast("施工原価に反映しました"); render();
     }
   });
 }
@@ -5319,7 +4786,7 @@ function ViewSimulation(){
         '<div><div class="stat__label">解体費（ざっくり・'+esc(c.st)+' '+NF.format(c.unit)+'円/坪 ×延床＋諸経費）</div>'+
         '<div class="tnum" style="font-size:21px;font-weight:800;color:var(--primary)">'+yen(c.demoMid)+'</div>'+
         '<div class="stat__delta">幅 '+yen(c.demoLow)+' 〜 '+yen(c.demoHigh)+'</div></div>';
-    h += '<div class="field__hint" style="margin-top:10px">現地・築年・搬出条件で ±30% 動きます。'+(c.unitFallback?'仮単価で計算中。':'')+'きちんと出すなら案件を作って「事前見積」で（案件ごとの単価も反映されます）。</div>';
+    h += '<div class="field__hint" style="margin-top:10px">あくまで概算の目安です。現地・築年・搬出条件で ±30% 動きます'+(c.unitFallback?'（相場の仮単価で計算中）':'')+'。</div>';
     return h;
   }
 
