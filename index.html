@@ -429,6 +429,27 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 .deal-card__row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px}
 .deal-card__amt{font-weight:800;font-variant-numeric:tabular-nums}
 
+/* お気に入り★（r106） */
+.favstar{width:30px;height:30px;flex:0 0 auto;display:grid;place-items:center;border:none;background:none;padding:0;cursor:pointer;color:var(--border-strong);border-radius:8px;transition:color .12s,background .12s}
+.favstar svg{width:18px;height:18px}
+.favstar:hover{background:var(--surface-3);color:var(--muted)}
+.favstar.is-on{color:var(--warning)}
+.favstar.is-on svg{fill:currentColor}
+.favstar--sm{width:26px;height:26px}
+.favstar--sm svg{width:16px;height:16px}
+tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warning)}
+
+/* 失注した案件（一覧下部・折りたたみ／r107） */
+.lost-toggle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:16px;padding:9px;background:none;border:1px dashed var(--border-strong);border-radius:var(--radius-sm);color:var(--muted);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer}
+.lost-toggle:hover{background:var(--surface-2);color:var(--text-2)}
+.lost-toggle .chev{width:15px;height:15px;transition:transform .15s ease}
+.lost-toggle.is-open .chev{transform:rotate(180deg)}
+.lostlist{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.lostrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;font-size:12.5px}
+.lostrow:hover{background:var(--surface-3)}
+.lostrow__co{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lostrow__meta{color:var(--muted);font-weight:600;white-space:nowrap;flex:0 0 auto}
+
 /* Funnel */
 .funnel{display:flex;flex-direction:column;gap:2px}
 .funnel__stage{padding:2px 0}
@@ -759,15 +780,23 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
     <g id="i-phone"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></g>
     <g id="i-mail"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="3 6 12 13 21 6"/></g>
     <g id="i-pin"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></g>
+    <g id="i-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></g>
   </defs>
 </svg>
 
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-07 r105";
+var APP_BUILD = "2026-09-07 r107";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-07 r107": [
+    "失注した案件は案件一覧から隠し、一覧の下の「失注した案件（件数）」ボタンから開けるようにしました"
+  ],
+  "2026-09-07 r106": [
+    "案件に「お気に入り（★）」を追加しました。★を付けた案件は案件一覧で常に一番上に並びます",
+    "案件一覧の並び替えの横にある★で「お気に入りだけ表示」に切り替えられます"
+  ],
   "2026-09-07 r105": [
     "金額管理に「外注費」欄を追加し、「自社で受ける場合」と「外注に出す場合」の見込利益を並べて表示するようにしました",
     "外注の利益 ＝ 提示金額 − 外注費 − その他原価"
@@ -1414,6 +1443,7 @@ var DB = {
       phone_connected_on:null, quote_requested_on:null, survey_scheduled_on:null,
       survey_done_on:null, quote_submitted_on:null, considering_on:null, won_on:null, lost_on:null,
       amount_presented:null, cost_construction:null, cost_other:null, cost_outsource:null,   // cost_outsource: 外注に出す時に協力会社へ払う額（r105）
+      favorite:false,           // お気に入り（r106・一覧で上に固定）
       next_follow_on:null, next_action:"", next_action_other:"",
       lost_reason:"", lost_reason_note:"",
       lost_detail:"",           // 失注のくわしい状況（振り返り用）
@@ -1650,7 +1680,7 @@ var DB = {
       source:"", source_other:"", site_address:"", memo:"", status:"new", probability:"C",
       phone_connected_on:null, quote_requested_on:null, survey_scheduled_on:null, survey_done_on:null,
       quote_submitted_on:null, considering_on:null, won_on:null, lost_on:null,
-      amount_presented:null, cost_construction:null, cost_other:null, cost_outsource:null,
+      amount_presented:null, cost_construction:null, cost_other:null, cost_outsource:null, favorite:false,
       next_follow_on:null, next_action:"", next_action_other:"", lost_reason:"", lost_reason_note:"",
       survey:null, pre:null, client_budget:null, client_budget_band:"", files:[], pay_items:[], handover:"", torihiki:"", property_price:null
     };
@@ -2676,8 +2706,9 @@ function ViewDashboard(){
 /* ============================================================
    VIEW: Deal list
    ============================================================ */
-var dealFilters = { q:"", status:"", prob:"", source:"", from:"", to:"" };
+var dealFilters = { q:"", status:"", prob:"", source:"", from:"", to:"", favOnly:false };
 var dealSort = "created_desc";
+var dealsShowLost = false;   // r107: 失注した案件は一覧下部の小さなボタンから開く
 var DEAL_SORTS = [
   { k:"created_desc",  label:"登録が新しい順" },
   { k:"follow_asc",    label:"次回追客が近い順" },
@@ -2706,9 +2737,13 @@ function ViewDeals(){
     if (f.source && d.source !== f.source) return false;
     if (f.from && d.created_on < f.from) return false;
     if (f.to && d.created_on > f.to) return false;
+    if (f.favOnly && !d.favorite) return false;
+    if (d.status === "lost") return false;   // 失注は一覧に出さない（下部の「失注した案件」から開く）
     return true;
   }
   var filtered = deals.filter(pass);
+  var lostDeals = deals.filter(function(d){ return d.status === "lost"; })
+    .sort(function(a,b){ return (b.lost_on||"") < (a.lost_on||"") ? -1 : (b.lost_on||"") > (a.lost_on||"") ? 1 : 0; });
   var sortFns = {
     created_desc: function(a,b){ return (b.created_on||"") < (a.created_on||"") ? -1 : (b.created_on||"") > (a.created_on||"") ? 1 : 0; },
     follow_asc: function(a,b){ var av=a.next_follow_on||"9999-99-99", bv=b.next_follow_on||"9999-99-99"; return av<bv?-1:av>bv?1:0; },
@@ -2721,9 +2756,11 @@ function ViewDeals(){
     profit_desc: function(a,b){ return (Calc.profit(b).profit==null?-1e15:Calc.profit(b).profit) - (Calc.profit(a).profit==null?-1e15:Calc.profit(a).profit); }
   };
   filtered.sort(sortFns[dealSort] || sortFns.created_desc);
+  // お気に入りは（選んだ並び順の中で）常に上に固定
+  filtered = filtered.filter(function(d){ return d.favorite; }).concat(filtered.filter(function(d){ return !d.favorite; }));
 
   var html =
-    '<div class="page-head only-desktop"><div><h1>案件一覧</h1><p>'+filtered.length+' / '+deals.length+' 件</p></div></div>';
+    '<div class="page-head only-desktop"><div><h1>案件一覧</h1><p>'+filtered.length+' / '+(deals.length - lostDeals.length)+' 件</p></div></div>';
 
   var activeFilterCount = ["status","prob","source","from","to"].filter(function(kk){ return dealFilters[kk]; }).length;
   html += '<div class="filterbar">'+
@@ -2731,10 +2768,11 @@ function ViewDeals(){
     '<select class="select" id="fsort" style="max-width:170px">'+
       DEAL_SORTS.map(function(o){ return '<option value="'+o.k+'"'+(dealSort===o.k?" selected":"")+'>'+esc(o.label)+'</option>'; }).join("")+
     '</select>'+
+    '<button type="button" class="favstar favstar--sm'+(dealFilters.favOnly?" is-on":"")+'" id="fFav" title="お気に入りだけ表示" aria-pressed="'+(dealFilters.favOnly?"true":"false")+'">'+icon("star")+'</button>'+
     '<button class="btn btn--soft btn--sm only-mobile" id="filterToggle">絞り込み'+(activeFilterCount?' <span class="badge" style="--c:var(--primary)">'+activeFilterCount+'</span>':'')+'</button>'+
     '<div class="filter-more'+(activeFilterCount?' is-open':'')+'" id="filterMore">'+
       '<select class="select" id="fstatus" style="max-width:150px"><option value="">ステータス：全て</option>'+
-        ALL_STATUSES.map(function(s){ return '<option value="'+s.key+'"'+(dealFilters.status===s.key?" selected":"")+'>'+s.label+'</option>'; }).join("")+
+        ALL_STATUSES.filter(function(s){ return s.key !== "lost"; }).map(function(s){ return '<option value="'+s.key+'"'+(dealFilters.status===s.key?" selected":"")+'>'+s.label+'</option>'; }).join("")+
       '</select>'+
       '<select class="select" id="fprob" style="max-width:130px"><option value="">見込み度：全て</option>'+
         PROBABILITIES.map(function(p){ return '<option value="'+p.k+'"'+(dealFilters.prob===p.k?" selected":"")+'>'+p.k+'</option>'; }).join("")+
@@ -2769,10 +2807,13 @@ function ViewDeals(){
       var overdue = d.next_follow_on && d.next_follow_on < isoToday() && Calc.isActive(d);
       var stale = Calc.isActive(d) ? lastContactDays(d) : null;
       var staleB = (stale !== null && stale >= 10) ? ' <span class="badge '+(stale>=21?'pr-high':'pr-mid')+'" title="最終接触からの日数">放置'+stale+'日</span>' : '';
-      html += '<tr class="clickable" data-goto="'+d.id+'">'+
-        '<td><div style="font-weight:800">'+esc(d.company_name||"（無名）")+'</div>'+
-          '<div class="muted" style="font-size:12px">'+esc(d.contact_name||"")+' ・ 登録 '+fmtDate(d.created_on)+'</div>'+
-          '<div class="row" style="gap:6px">'+telChip(d)+filesChip(d)+'</div></td>'+
+      html += '<tr class="clickable'+(d.favorite?' is-fav':'')+'" data-goto="'+d.id+'">'+
+        '<td><div style="display:flex;gap:8px;align-items:flex-start">'+
+          '<button type="button" class="favstar favstar--sm'+(d.favorite?' is-on':'')+'" data-fav="'+d.id+'" title="お気に入り" aria-pressed="'+(d.favorite?"true":"false")+'">'+icon("star")+'</button>'+
+          '<div><div style="font-weight:800">'+esc(d.company_name||"（無名）")+'</div>'+
+            '<div class="muted" style="font-size:12px">'+esc(d.contact_name||"")+' ・ 登録 '+fmtDate(d.created_on)+'</div>'+
+            '<div class="row" style="gap:6px">'+telChip(d)+filesChip(d)+'</div></div>'+
+        '</div></td>'+
         '<td>'+statusBadge(d.status)+staleB+'</td>'+
         '<td>'+probBadge(d.probability)+'</td>'+
         '<td class="num" title="'+yen(d.amount_presented)+'">'+yenMan(d.amount_presented)+'</td>'+
@@ -2790,11 +2831,13 @@ function ViewDeals(){
       var overdue = d.next_follow_on && d.next_follow_on < isoToday() && Calc.isActive(d);
       var stale = Calc.isActive(d) ? lastContactDays(d) : null;
       var staleB = (stale !== null && stale >= 10) ? '<span class="badge '+(stale>=21?'pr-high':'pr-mid')+'">放置'+stale+'日</span>' : '';
-      html += '<div class="deal-card" data-goto="'+d.id+'">'+
+      html += '<div class="deal-card'+(d.favorite?' is-fav':'')+'" data-goto="'+d.id+'">'+
         '<div class="deal-card__top">'+
           '<div><div class="deal-card__co">'+esc(d.company_name||"（無名）")+'</div>'+
           '<div class="deal-card__meta">'+esc(d.contact_name||"担当者未設定")+' ・ '+esc(sourceLabel(d)||"経路未設定")+' ・ '+fmtDate(d.created_on)+'登録</div></div>'+
-          probBadge(d.probability)+
+          '<div class="row" style="gap:2px;flex:0 0 auto">'+probBadge(d.probability)+
+            '<button type="button" class="favstar favstar--sm'+(d.favorite?' is-on':'')+'" data-fav="'+d.id+'" title="お気に入り" aria-pressed="'+(d.favorite?"true":"false")+'">'+icon("star")+'</button>'+
+          '</div>'+
         '</div>'+
         '<div class="deal-card__row" style="justify-content:flex-start;flex-wrap:wrap;gap:6px">'+statusBadge(d.status)+(prioBadge(Calc.priorityBucket(d))||"")+staleB+'</div>'+
         '<div class="deal-card__row">'+
@@ -2806,6 +2849,20 @@ function ViewDeals(){
       '</div>';
     });
     html += '</div>';
+  }
+
+  // 失注した案件（下部の小さなボタンから開閉）
+  if (lostDeals.length){
+    html += '<button type="button" class="lost-toggle'+(dealsShowLost?' is-open':'')+'" id="lostToggle" aria-expanded="'+(dealsShowLost?'true':'false')+'">'+
+      '失注した案件（'+lostDeals.length+'）'+icon("chevron","chev")+'</button>'+
+      '<div class="lostlist" id="lostList"'+(dealsShowLost?'':' hidden')+'>'+
+        lostDeals.map(function(d){
+          return '<div class="lostrow" data-goto="'+d.id+'">'+
+            '<span class="lostrow__co">'+esc(d.company_name||"（無名）")+'</span>'+
+            '<span class="lostrow__meta">'+esc(d.lost_reason||"理由未設定")+(d.lost_on?' ・ '+fmtDate(d.lost_on):'')+'</span>'+
+          '</div>';
+        }).join("")+
+      '</div>';
   }
 
   return {
@@ -2820,6 +2877,14 @@ function ViewDeals(){
       });
       root.querySelectorAll("[data-files]").forEach(function(b){
         b.onclick = function(e){ e.stopPropagation(); openDealFilesDialog(b.getAttribute("data-files")); };
+      });
+      root.querySelectorAll("[data-fav]").forEach(function(b){
+        b.onclick = function(e){
+          e.stopPropagation();
+          var d = DB.deal(b.getAttribute("data-fav")); if (!d) return;
+          DB.updateDeal(d.id, { favorite: !d.favorite });
+          render();
+        };
       });
       function bind(id, key, ev){
         var el = root.querySelector("#"+id); if (!el) return;
@@ -2838,8 +2903,18 @@ function ViewDeals(){
       if (ft) ft.onclick = function(){ root.querySelector("#filterMore").classList.toggle("is-open"); };
       var fsort = root.querySelector("#fsort");
       if (fsort) fsort.addEventListener("change", function(){ dealSort = fsort.value; render(); });
+      var fFav = root.querySelector("#fFav");
+      if (fFav) fFav.onclick = function(){ dealFilters.favOnly = !dealFilters.favOnly; render(); };
+      var lostTog = root.querySelector("#lostToggle");
+      if (lostTog) lostTog.onclick = function(){
+        dealsShowLost = !dealsShowLost;
+        var ll = root.querySelector("#lostList");
+        if (ll) ll.hidden = !dealsShowLost;
+        lostTog.classList.toggle("is-open", dealsShowLost);
+        lostTog.setAttribute("aria-expanded", dealsShowLost ? "true" : "false");
+      };
       var fc = root.querySelector("#fclear");
-      if (fc) fc.onclick = function(){ dealFilters = { q:"", status:"", prob:"", source:"", from:"", to:"" }; render(); };
+      if (fc) fc.onclick = function(){ dealFilters = { q:"", status:"", prob:"", source:"", from:"", to:"", favOnly:false }; render(); };
     }
   };
 }
@@ -4172,7 +4247,9 @@ function ViewDealDetail(id){
 
   // header
   html += '<div class="page-head"><div>'+
-    '<h1 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+esc(deal.company_name||"（無名）")+' '+statusBadge(deal.status,true)+'</h1>'+
+    '<h1 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'+
+      '<button type="button" class="favstar'+(deal.favorite?" is-on":"")+'" data-fav="'+deal.id+'" title="お気に入り" aria-pressed="'+(deal.favorite?"true":"false")+'">'+icon("star")+'</button>'+
+      esc(deal.company_name||"（無名）")+' '+statusBadge(deal.status,true)+'</h1>'+
     '<p>'+esc(deal.code)+' ・ 登録 '+fmtDateFull(deal.created_on)+' ・ '+esc(sourceLabel(deal)||"経路未設定")+
       (prioBadge(Calc.priorityBucket(deal))?' ・ '+prioBadge(Calc.priorityBucket(deal)):'')+'</p>'+
     '</div>'+
@@ -4303,7 +4380,8 @@ function ViewDealDetail(id){
     title: deal.company_name || "案件詳細",
     html: html,
     back:function(){ navTo("/deals"); },
-    appbarAction:'<button class="btn btn--sm btn--ghost" data-act="delete" aria-label="この案件を削除">'+icon("trash")+'</button>',
+    appbarAction:'<button type="button" class="favstar favstar--sm'+(deal.favorite?" is-on":"")+'" data-fav="'+deal.id+'" aria-label="お気に入り" aria-pressed="'+(deal.favorite?"true":"false")+'">'+icon("star")+'</button>'+
+      '<button class="btn btn--sm btn--ghost" data-act="delete" aria-label="この案件を削除">'+icon("trash")+'</button>',
     mount:function(root){
       // autosave text/select/date/number fields
       var autoFields = root.querySelectorAll('.card [data-field], .timeline [data-field]');
@@ -4434,6 +4512,16 @@ function ViewDealDetail(id){
       });
       var addlBtn = root.querySelector('[data-act="addlMemo"]');
       if (addlBtn) addlBtn.onclick = function(){ openAddlMemoDialog(id); };
+
+      // お気に入り★（ヘッダー内 ＋ アプリバー。#view の外にもあるので document から拾う）
+      document.querySelectorAll('[data-fav]').forEach(function(b){
+        b.onclick = function(){
+          var d = DB.deal(id); if (!d) return;
+          DB.updateDeal(id, { favorite: !d.favorite });
+          toast(!d.favorite ? "お気に入りに追加" : "お気に入りから外しました");
+          render();
+        };
+      });
 
       // delete （ヘッダー右上のゴミ箱は #view の外にあるので document から拾う）
       document.querySelectorAll('[data-act="delete"]').forEach(function(b){
