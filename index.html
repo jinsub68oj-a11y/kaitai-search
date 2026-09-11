@@ -815,9 +815,12 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-12 r128";
+var APP_BUILD = "2026-09-12 r129";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-12 r129": [
+    "同期した添付ファイルが「見つかりません」と出ることがある不具合を改善。開いた時にこの端末に無ければその場で取りに行くようにし、添付を追加した時点ですぐ送信するようにしました"
+  ],
   "2026-09-12 r128": [
     "設定の「システム（不具合対策）」欄を削除しました。「最新版を確認して再読み込み」は「他の端末と同期」の「今すぐ同期」の隣に移動しました"
   ],
@@ -2180,33 +2183,39 @@ var Sync = {
       return chain.then(function(){ DB.saveSettings({ sync_pushed_files: out }); });
     });
   },
+  // r129: 1件だけを保管場所から取りに行く（この端末に無い添付を「開く」時に即座に取得するため）
+  // 見つかった場合はtrue、無い・失敗した場合はfalseを返す（例外は投げない）
+  pullOneFile: function(code, fid){
+    if (!FS.ok) return Promise.resolve(false);
+    return Sync._roomId(code).then(function(roomId){
+      return fetch(Sync._fileDocUrl(roomId, fid)).then(function(res){
+        if (!res.ok) return false;
+        return res.json().then(function(doc){
+          var f = doc.fields || {};
+          if (!f.iv || !f.data) return false;
+          return Sync._decryptBytes(code, f.iv.stringValue, f.data.stringValue).then(function(bytes){
+            var mime = (f.mime && f.mime.stringValue) || "";
+            return FS.put(fid, new Blob([bytes], { type: mime })).then(function(){ return true; });
+          });
+        });
+      });
+    }).catch(function(){ return false; });
+  },
   pullFiles: function(code){
     if (!FS.ok) return Promise.resolve();
     var refs = Sync._allFileRefs();
     var ids = Object.keys(refs);
     if (!ids.length) return Promise.resolve();
-    return Sync._roomId(code).then(function(roomId){
-      var chain = Promise.resolve();
-      ids.forEach(function(fid){
-        chain = chain.then(function(){
-          return FS.get(fid).then(function(existing){
-            if (existing) return;   // この端末に既にある
-            return fetch(Sync._fileDocUrl(roomId, fid)).then(function(res){
-              if (!res.ok) return;
-              return res.json().then(function(doc){
-                var f = doc.fields || {};
-                if (!f.iv || !f.data) return;
-                return Sync._decryptBytes(code, f.iv.stringValue, f.data.stringValue).then(function(bytes){
-                  var mime = (f.mime && f.mime.stringValue) || "";
-                  return FS.put(fid, new Blob([bytes], { type: mime }));
-                });
-              });
-            }).catch(function(){});
-          });
+    var chain = Promise.resolve();
+    ids.forEach(function(fid){
+      chain = chain.then(function(){
+        return FS.get(fid).then(function(existing){
+          if (existing) return;   // この端末に既にある
+          return Sync.pullOneFile(code, fid);
         });
       });
-      return chain;
     });
+    return chain;
   },
 
   // アプリを開くたびに自動で呼ぶ。合言葉が設定されている時だけ動く。失敗は無視（オフラインでも普通に使える）
@@ -2219,6 +2228,14 @@ var Sync = {
     }).catch(function(e){ logError("sync-auto", (e && e.message) || String(e)); });
   }
 };
+// r129: 添付ファイルを追加した直後など、次にアプリを開くのを待たずにすぐ同期しておきたい時に呼ぶ。
+// 失敗しても何も起きない（次にアプリを開いた時の自動同期で改めて試みる）。
+function syncSoon(){
+  if (!Sync.configured()) return;
+  var code = DB.settings().sync_code;
+  if (!code) return;
+  Sync.runOnce(code).catch(function(e){ logError("sync-soon", (e && e.message) || String(e)); });
+}
 
 /* ============================================================
    Calculations  (lib/calc.ts)
@@ -3801,7 +3818,20 @@ function fmtBytes(n){
 function openAttachment(deal, fid){
   var m = ((deal && deal.files) || []).filter(function(f){ return f.id === fid; })[0] || {};
   FS.get(fid).then(function(blob){
-    if (!blob){ toast("ファイル本体が見つかりません（この端末にないか削除済み）"); return; }
+    if (!blob){
+      // r129: この端末にまだ無い（同期で未取得等）→ 同期設定があればその場で1件だけ取りに行く
+      var code = DB.settings().sync_code;
+      if (Sync.configured() && code){
+        toast("この端末にまだ届いていません。取得しています…");
+        Sync.pullOneFile(code, fid).then(function(ok){
+          if (ok) openAttachment(deal, fid);
+          else toast("取得できませんでした（送信時にサイズが大きく対象外になった可能性があります）");
+        });
+        return;
+      }
+      toast("ファイル本体が見つかりません（この端末にないか削除済み）");
+      return;
+    }
     var url = URL.createObjectURL(blob);
     var isImg = /^image\//.test(m.type || blob.type || "");
     var isPdf = /pdf/i.test(m.type || blob.type || "");
@@ -4254,6 +4284,7 @@ function wireFilesCard(root, id){
       toast(added + "件を添付しました" + (skipped ? "（" + skipped + "件は10MB超過/失敗）" : ""));
       render();
       var fd = document.getElementById("filesDisc"); if (fd) fd.classList.add("is-open");
+      syncSoon();   // r129: 添付を追加したら、次にアプリを開くのを待たずにすぐ送っておく
     });
   };
 
@@ -4271,6 +4302,7 @@ function wireFilesCard(root, id){
         DB.updateDeal(id, { files: (d.files || []).filter(function(f){ return f.id !== fid; }) });
         toast("削除しました"); render();
         var fd = document.getElementById("filesDisc"); if (fd) fd.classList.add("is-open");
+        syncSoon();
       }, true);
     };
   });
