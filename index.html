@@ -796,9 +796,12 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-10 r114";
+var APP_BUILD = "2026-09-11 r115";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-11 r115": [
+    "案件に「保留」を追加しました。営業ステータスの「保留にする」で追客・優先度の対象から外れ、案件一覧の下の「保留中の案件」ボタンから確認できます（理由メモも入力可）"
+  ],
   "2026-09-10 r114": [
     "追客管理の一覧をコンパクトにしました。ボタンや余白を詰めて1件あたりの高さを縮小（内容はそのまま）"
   ],
@@ -1477,6 +1480,7 @@ var DB = {
       favorite:false,           // お気に入り（r106・一覧で上に固定）
       next_follow_on:null, next_action:"", next_action_other:"",
       awaiting_reply:false,     // 折り返し待ち（r108・ONで追客の催促を止める）
+      on_hold:false, hold_on:null, hold_note:"",   // 保留（r115・ONで追客・優先度の対象から外す。一覧下部の「保留中」から確認）
       lost_reason:"", lost_reason_note:"",
       lost_detail:"",           // 失注のくわしい状況（振り返り用）
       lost_learn:"",            // 次に活かすこと（改善点）
@@ -1713,6 +1717,7 @@ var DB = {
       phone_connected_on:null, quote_requested_on:null, survey_scheduled_on:null, survey_done_on:null,
       quote_submitted_on:null, considering_on:null, won_on:null, lost_on:null,
       amount_presented:null, cost_construction:null, cost_other:null, cost_outsource:null, favorite:false, awaiting_reply:false,
+      on_hold:false, hold_on:null, hold_note:"",
       next_follow_on:null, next_action:"", next_action_other:"", lost_reason:"", lost_reason_note:"",
       survey:null, pre:null, client_budget:null, client_budget_band:"", files:[], pay_items:[], handover:"", torihiki:"", property_price:null
     };
@@ -2035,7 +2040,7 @@ var Calc = {
   },
 
   priorityScore: function(deal){
-    if (!Calc.isActive(deal)) return -99;
+    if (!Calc.isActive(deal) || deal.on_hold) return -99;   // 保留中は優先度の対象外（r115）
     var s = 0;
     s += ({ A:3, B:1, C:-1, D:-2 })[deal.probability] || 0;
     if (deal.status === "quote_submitted" || deal.status === "considering") s += 2;
@@ -2057,7 +2062,7 @@ var Calc = {
   },
 
   topPriority: function(n){
-    return DB.deals().filter(Calc.isActive)
+    return DB.deals().filter(function(d){ return Calc.isActive(d) && !d.on_hold; })
       .map(function(d){ return { d:d, s:Calc.priorityScore(d) }; })
       .sort(function(a,b){
         if (b.s !== a.s) return b.s - a.s;
@@ -2072,6 +2077,7 @@ var Calc = {
     var t = isoToday();
     var out = { overdue:[], today:[], upcoming:[], waiting:[] };
     DB.deals().filter(Calc.isActive).forEach(function(d){
+      if (d.on_hold) return;   // 保留中は追客管理から外す（r115）
       if (d.awaiting_reply){ out.waiting.push(d); return; }   // 折り返し待ちは催促しない
       if (!d.next_follow_on) return;
       if (d.next_follow_on < t) out.overdue.push(d);
@@ -2744,6 +2750,7 @@ var dealFilters = { q:"", status:"", prob:"", source:"", from:"", to:"", favOnly
 var dealSort = "created_desc";
 var dealsShowLost = false;   // r107: 失注した案件は一覧下部の小さなボタンから開く
 var dealsShowWon = false;    // r108: 成約した案件も同様に下部から開く
+var dealsShowHold = false;   // r115: 保留中の案件も同様に下部から開く
 var DEAL_SORTS = [
   { k:"created_desc",  label:"登録が新しい順" },
   { k:"follow_asc",    label:"次回追客が近い順" },
@@ -2774,6 +2781,7 @@ function ViewDeals(){
     if (f.to && d.created_on > f.to) return false;
     if (f.favOnly && !d.favorite) return false;
     if (d.status === "lost" || d.status === "won") return false;   // 失注・成約は一覧に出さない（下部の各ボタンから開く）
+    if (d.on_hold) return false;   // 保留中も一覧に出さない（下部のボタンから開く・r115）
     return true;
   }
   var filtered = deals.filter(pass);
@@ -2781,6 +2789,8 @@ function ViewDeals(){
     .sort(function(a,b){ return (b.lost_on||"") < (a.lost_on||"") ? -1 : (b.lost_on||"") > (a.lost_on||"") ? 1 : 0; });
   var wonDeals = deals.filter(function(d){ return d.status === "won"; })
     .sort(function(a,b){ return (b.won_on||"") < (a.won_on||"") ? -1 : (b.won_on||"") > (a.won_on||"") ? 1 : 0; });
+  var holdDeals = deals.filter(function(d){ return Calc.isActive(d) && d.on_hold; })
+    .sort(function(a,b){ return (b.hold_on||"") < (a.hold_on||"") ? -1 : (b.hold_on||"") > (a.hold_on||"") ? 1 : 0; });
   var sortFns = {
     created_desc: function(a,b){ return (b.created_on||"") < (a.created_on||"") ? -1 : (b.created_on||"") > (a.created_on||"") ? 1 : 0; },
     follow_asc: function(a,b){ var av=a.next_follow_on||"9999-99-99", bv=b.next_follow_on||"9999-99-99"; return av<bv?-1:av>bv?1:0; },
@@ -2797,7 +2807,7 @@ function ViewDeals(){
   filtered = filtered.filter(function(d){ return d.favorite; }).concat(filtered.filter(function(d){ return !d.favorite; }));
 
   var html =
-    '<div class="page-head only-desktop"><div><h1>案件一覧</h1><p>'+filtered.length+' / '+(deals.length - lostDeals.length - wonDeals.length)+' 件（進行中）</p></div></div>';
+    '<div class="page-head only-desktop"><div><h1>案件一覧</h1><p>'+filtered.length+' / '+(deals.length - lostDeals.length - wonDeals.length - holdDeals.length)+' 件（進行中）</p></div></div>';
 
   var activeFilterCount = ["status","prob","source","from","to"].filter(function(kk){ return dealFilters[kk]; }).length;
   html += '<div class="filterbar">'+
@@ -2902,6 +2912,20 @@ function ViewDeals(){
       '</div>';
   }
 
+  // 保留中の案件（下部の小さなボタンから開閉）
+  if (holdDeals.length){
+    html += '<button type="button" class="lost-toggle'+(dealsShowHold?' is-open':'')+'" id="holdToggle" aria-expanded="'+(dealsShowHold?'true':'false')+'">'+
+      '保留中の案件（'+holdDeals.length+'）'+icon("chevron","chev")+'</button>'+
+      '<div class="lostlist" id="holdList"'+(dealsShowHold?'':' hidden')+'>'+
+        holdDeals.map(function(d){
+          return '<div class="lostrow" data-goto="'+d.id+'">'+
+            '<span class="lostrow__co">'+esc(d.company_name||"（無名）")+'</span>'+
+            '<span class="lostrow__meta">'+esc(d.hold_note||"メモなし")+(d.hold_on?' ・ '+fmtDate(d.hold_on):'')+'</span>'+
+          '</div>';
+        }).join("")+
+      '</div>';
+  }
+
   // 失注した案件（下部の小さなボタンから開閉）
   if (lostDeals.length){
     html += '<button type="button" class="lost-toggle'+(dealsShowLost?' is-open':'')+'" id="lostToggle" aria-expanded="'+(dealsShowLost?'true':'false')+'">'+
@@ -2971,6 +2995,14 @@ function ViewDeals(){
         if (wl) wl.hidden = !dealsShowWon;
         wonTog.classList.toggle("is-open", dealsShowWon);
         wonTog.setAttribute("aria-expanded", dealsShowWon ? "true" : "false");
+      };
+      var holdTog = root.querySelector("#holdToggle");
+      if (holdTog) holdTog.onclick = function(){
+        dealsShowHold = !dealsShowHold;
+        var hl = root.querySelector("#holdList");
+        if (hl) hl.hidden = !dealsShowHold;
+        holdTog.classList.toggle("is-open", dealsShowHold);
+        holdTog.setAttribute("aria-expanded", dealsShowHold ? "true" : "false");
       };
       var fc = root.querySelector("#fclear");
       if (fc) fc.onclick = function(){ dealFilters = { q:"", status:"", prob:"", source:"", from:"", to:"", favOnly:false }; render(); };
@@ -4312,7 +4344,8 @@ function ViewDealDetail(id){
       esc(deal.company_name||"（無名）")+' '+statusBadge(deal.status,true)+'</h1>'+
     '<p>'+esc(deal.code)+' ・ 登録 '+fmtDateFull(deal.created_on)+' ・ '+esc(sourceLabel(deal)||"経路未設定")+
       (prioBadge(Calc.priorityBucket(deal))?' ・ '+prioBadge(Calc.priorityBucket(deal)):'')+
-      (deal.awaiting_reply?' ・ <span class="badge" style="--c:var(--muted)">折り返し待ち</span>':'')+'</p>'+
+      (deal.awaiting_reply?' ・ <span class="badge" style="--c:var(--muted)">折り返し待ち</span>':'')+
+      (deal.on_hold?' ・ <span class="badge" style="--c:var(--muted)">保留中</span>':'')+'</p>'+
     '</div>'+
     '<button class="btn btn--danger-soft only-desktop" data-act="delete">'+icon("trash")+'削除</button>'+
   '</div>';
@@ -4326,6 +4359,9 @@ function ViewDealDetail(id){
     }
     html += '<button class="btn btn--soft btn--sm" data-status="won">'+icon("check")+'成約</button>';
     html += '<button class="btn btn--danger-soft btn--sm" data-act="lost">失注にする</button>';
+    html += deal.on_hold
+      ? '<button class="btn btn--soft btn--sm" data-act="unhold">'+icon("check")+'保留を解除</button>'
+      : '<button class="btn btn--ghost btn--sm" data-act="hold">保留にする</button>';
   } else {
     html += '<button class="btn btn--soft" data-act="reopen">対応中に戻す</button>';
     if (deal.status === "lost" && deal.lost_reason){
@@ -4333,6 +4369,10 @@ function ViewDealDetail(id){
     }
   }
   html += '</div>';
+  if (!isClosed && deal.on_hold){
+    html += '<div class="field__hint" style="margin-top:6px">保留中：追客・優先度の対象から外れています。一覧では下部の「保留中の案件」から確認できます。</div>'+
+      fieldTextarea("保留の理由・メモ（任意）","hold_note",deal.hold_note||"",{placeholder:"例：来年度の予算が付くまで様子見とのこと"});
+  }
   if (!isClosed && pipeIndex(deal.status) >= 1){
     var _prevStage = PIPELINE[pipeIndex(deal.status) - 1];
     html += '<button class="btn btn--ghost btn--sm" data-act="revert" style="margin-top:8px" title="進めるボタンを押し間違えたとき用。1つ前の段階に戻します">'+icon("back")+'1つ戻す（'+esc(_prevStage.label)+'へ）</button>';
@@ -4533,6 +4573,19 @@ function ViewDealDetail(id){
         DB.updateDeal(id, { status:"considering" });
         toast("対応中に戻しました"); render();
       };
+
+      var holdBtn = root.querySelector('[data-act="hold"]');
+      if (holdBtn) holdBtn.onclick = function(){
+        DB.updateDeal(id, { on_hold:true, hold_on:isoToday() });
+        toast("保留にしました（追客・優先度の対象から外します）"); render();
+      };
+      var unholdBtn = root.querySelector('[data-act="unhold"]');
+      if (unholdBtn) unholdBtn.onclick = function(){
+        DB.updateDeal(id, { on_hold:false });
+        toast("保留を解除しました"); render();
+      };
+      var holdNote = root.querySelector('[data-field="hold_note"]');
+      if (holdNote) holdNote.addEventListener("blur", function(){ DB.updateDeal(id, { hold_note: holdNote.value }); });
 
       var revertBtn = root.querySelector('[data-act="revert"]');
       if (revertBtn) revertBtn.onclick = function(){
