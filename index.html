@@ -387,8 +387,8 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 /* Collapsible */
 .disclosure{border:1px dashed var(--border-strong);border-radius:var(--radius);overflow:hidden}
 .disclosure__btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;background:var(--surface-2);border:none;color:var(--text);font-weight:700;font-size:14px;cursor:pointer;text-align:left}
-.disclosure__btn .chev{width:18px;height:18px;flex:0 0 18px;opacity:.55;transition:transform .15s ease}
-.disclosure.is-open .disclosure__btn .chev{transform:rotate(180deg)}
+.disclosure__btn .chev{width:18px;height:18px;flex:0 0 18px;opacity:.55;transition:transform .15s ease;transform:rotate(180deg)}
+.disclosure.is-open .disclosure__btn .chev{transform:rotate(0deg)}
 .disclosure__body{padding:13px;border-top:1px solid var(--border);display:none}
 .disclosure.is-open .disclosure__body{display:block}
 .disclosure__btn>span{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;line-height:1.4}
@@ -446,9 +446,10 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 /* 失注した案件（一覧下部・折りたたみ／r107） */
 .lost-toggle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:16px;padding:9px;background:none;border:1px dashed var(--border-strong);border-radius:var(--radius-sm);color:var(--muted);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer}
 .lost-toggle:hover{background:var(--surface-2);color:var(--text-2)}
-.lost-toggle .chev{width:15px;height:15px;transition:transform .15s ease}
-.lost-toggle.is-open .chev{transform:rotate(180deg)}
+.lost-toggle .chev{width:15px;height:15px;transition:transform var(--dur-2) var(--ease);transform:rotate(180deg)}
+.lost-toggle.is-open .chev{transform:rotate(0deg)}
 .lostlist{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.lostlist:not([hidden]){animation:discReveal var(--dur-3) var(--ease)}   /* r121: 開いた時にスライド表示（.disclosureと同じ演出） */
 .lostrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;font-size:12.5px}
 .lostrow:hover{background:var(--surface-3)}
 .lostrow__co{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -665,6 +666,23 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 
 .divider{height:1px;background:var(--border);margin:16px 0}
 
+/* r118/r119: 設定ページだけコンパクトに（.stack/.card等は他画面と共用のためスコープして上書き） */
+.settings-stack{gap:8px}
+.settings-stack .card{padding:12px 14px}
+.settings-stack .section-label{margin:0 0 6px;font-size:10.5px}
+.settings-stack .form-grid,.settings-stack .form-grid-2{gap:8px}
+.settings-stack .field{gap:3px}
+.settings-stack .field__hint{font-size:10.5px}
+.settings-stack .kv{font-size:12px;gap:4px 12px}
+.settings-stack .divider{margin:10px 0}
+.settings-stack .segmented{gap:5px}
+.settings-stack .row{gap:6px}
+.settings-stack .table th{padding:6px 8px}
+.settings-stack .table td{padding:6px 8px}
+.settings-stack .table{font-size:12px}
+.settings-stack .btn--sm{min-height:30px;padding:0 9px;font-size:12px}
+.settings-stack .choice{min-height:32px;padding:0 12px;font-size:12.5px}
+
 /* ============================================================
    Responsive
    ============================================================ */
@@ -796,9 +814,30 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-11 r115";
+var APP_BUILD = "2026-09-11 r122";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-11 r122": [
+    "開閉の矢印の向きを直しました。閉じている時は上向き、開いて表示されている時は下向きに（成約/失注/保留中の案件、進捗の履歴などすべて）"
+  ],
+  "2026-09-11 r121": [
+    "案件一覧の「成約した案件」「失注した案件」「保留中の案件」を開いた時に、スライドして表示されるようにしました（開閉のアニメーションが抜けていた不具合を修正）"
+  ],
+  "2026-09-11 r120": [
+    "設定の「データ」欄、案件数・営業履歴の件数も横並びにしました"
+  ],
+  "2026-09-11 r119": [
+    "設定画面をさらにコンパクトにしました。「今月の目標」欄をスマホでも横並びに（以前は縦に並んでいました）、その他の余白・文字もさらに詰めました"
+  ],
+  "2026-09-11 r118": [
+    "設定画面のすべての項目をコンパクトにしました（カードの余白・文字サイズ・ボタンを詰めて見やすく。表示内容はそのまま）"
+  ],
+  "2026-09-11 r117": [
+    "設定の「自社の登録・許可」欄を削除しました（ダッシュボードの手続き期限のお知らせも連動して削除）。不具合チェックも実施し、問題は見つかりませんでした"
+  ],
+  "2026-09-11 r116": [
+    "決めた2台の端末どうしで、案件・連絡ログなどを自動でそろえられる「他の端末と同期」機能を追加しました（設定＞他の端末と同期）。合言葉を作ってもう一方の端末に入力するだけ。内容は端末側で暗号化してから送るので、保管サービス側からも読めません"
+  ],
   "2026-09-11 r115": [
     "案件に「保留」を追加しました。営業ステータスの「保留にする」で追客・優先度の対象から外れ、案件一覧の下の「保留中の案件」ボタンから確認できます（理由メモも入力可）"
   ],
@@ -1143,23 +1182,6 @@ var TYPICAL_FLOOR = {
 };
 
 // 会社の登録・許可の期限で、迫っている / 過ぎているもの
-function licenseAlerts(){
-  var s = DB.settings();
-  var today = isoToday();
-  var items = [
-    { label:"解体工事業登録の更新", iso:s.demo_reg_expiry },
-    { label:"建設業許可（解体）の更新", iso:s.const_license_expiry }
-  ];
-  var out = [];
-  items.forEach(function(it){
-    if (!it.iso) return;
-    var d = daysBetween(today, it.iso);
-    if (d === null || d > 90) return;
-    out.push({ label:it.label, iso:it.iso, days:d, level: d < 0 ? "over" : d <= 30 ? "now" : "soon" });
-  });
-  return out;
-}
-
 /* ============================================================
    Utilities  (lib/format.ts)
    ============================================================ */
@@ -1274,6 +1296,8 @@ var AI = { sample: null, ready: false };
    Swap this object for a Supabase-backed implementation later.
    ============================================================ */
 var K = { deals:"dcrm.deals", events:"dcrm.events", prices:"dcrm.prices", settings:"dcrm.settings", meta:"dcrm.meta", logs:"dcrm.logs", landhits:"dcrm.landhits", landseen:"dcrm.landseen", snapshots:"dcrm.snapshots" };
+// r116: 他端末同期の保管先（無料のFirebaseプロジェクト。カード登録不要）。値が空の間は同期機能そのものが休止する
+var SYNC_FIREBASE = { apiKey:"AIzaSyDamUnf2vFI8fMfV60gIFAU_CqWBgsz20U", projectId:"kaitai-sync" };
 var SNAPSHOT_MAX = 6;
 var SCHEMA_VERSION = 2;
 var LOG_KINDS = [
@@ -1342,8 +1366,23 @@ function writeDeals(arr, reason){
   }
   return write("dcrm.deals", arr);
 }
+// r116: 他端末同期の対象となる4キー。変更があった時刻を dcrm.meta.contentModifiedAt に記録する
+// （meta 自体は同期対象に含めない＝端末ごとのローカル情報として温存）
+var SYNC_CONTENT_KEYS = {};
+SYNC_CONTENT_KEYS[K.deals] = 1; SYNC_CONTENT_KEYS[K.events] = 1; SYNC_CONTENT_KEYS[K.prices] = 1; SYNC_CONTENT_KEYS[K.logs] = 1;
+function touchContentModified(){
+  try {
+    var m = JSON.parse(localStorage.getItem(K.meta) || "{}");
+    m.contentModifiedAt = Date.now();
+    localStorage.setItem(K.meta, JSON.stringify(m));
+  } catch (e){}
+}
 function write(key, val){
-  try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+    if (SYNC_CONTENT_KEYS[key]) touchContentModified();
+    return true;
+  }
   catch (e){
     logError("storage-write", key, (e && e.message) || "");
     // 容量オーバーの可能性 → 自動バックアップ/不具合の記録を削って一度だけ再試行
@@ -1351,6 +1390,7 @@ function write(key, val){
       localStorage.removeItem("dcrm.snapshots");
       localStorage.removeItem("dcrm.errlog");
       localStorage.setItem(key, JSON.stringify(val));
+      if (SYNC_CONTENT_KEYS[key]) touchContentModified();
       toast("保存領域が不足したため、自動バックアップ履歴を整理しました");
       return true;
     } catch (e2){
@@ -1416,9 +1456,10 @@ var DB = {
   prices: function(){ return read(K.prices, []); },
   settings: function(){
     return Object.assign({ theme:"dark", goal_won:0, goal_profit:0,
-      own_company:"", demo_reg_expiry:"", const_license_expiry:"",
+      own_company:"", demo_reg_expiry:"", const_license_expiry:"",   // r117で廃止・未使用（旧データ温存）
       cash_on_hand:null, cash_on_hand_on:"",
-      last_prices:[] }, read(K.settings, {}));   // r64: 新規案件に引き継ぐ「前回使った単価」
+      last_prices:[],   // r64: 新規案件に引き継ぐ「前回使った単価」
+      sync_code:"", sync_last_at:0 }, read(K.settings, {}));   // r116: 他端末同期の合言葉・最終同期時刻
   },
   saveSettings: function(patch){
     var s = Object.assign(DB.settings(), patch); write(K.settings, s); return s;
@@ -1859,6 +1900,165 @@ var DB = {
       if (stamps.won_on) DB._addEvent(deal.id, "won", stamps.won_on);
       if (stamps.lost_on) DB._addEvent(deal.id, "lost", stamps.lost_on);
     });
+  },
+
+  // r116: 他端末同期。案件・営業履歴・単価・連絡ログだけを対象にする（設定/端末固有の情報は含めない）
+  syncBundle: function(){
+    return { deals:DB.deals(), events:read(K.events,[]), prices:DB.prices(), logs:read(K.logs,[]) };
+  },
+  contentModifiedAt: function(){
+    try { return (JSON.parse(localStorage.getItem(K.meta) || "{}").contentModifiedAt) || 0; } catch(e){ return 0; }
+  },
+  applySyncBundle: function(b){
+    try { DB.takeSnapshot("同期前"); } catch(e){}
+    writeDeals(b.deals || [], "sync");   // 通常の保護（0件上書き阻止など）をそのまま適用
+    write(K.events, b.events || []);
+    write(K.prices, b.prices || []);
+    write(K.logs, b.logs || []);
+    DB.migrate();
+  }
+};
+
+/* ============================================================
+   Sync: 他端末とのデータ共有（合言葉ペアリング・r116）
+   仕組み：合言葉から「保管場所のID」と「暗号化キー」を別々に計算する（どちらもこの端末の中だけの計算）。
+   クラウドへは暗号化した内容だけを送る＝保管サービス側も中身（会社名・電話番号等）は読めない。
+   合言葉を知る2台の間だけで、アプリを開いた時に自動で新しい方の内容にそろえる（同時編集時は後勝ち・
+   ただし反映前に必ずこの端末の「自動バックアップ」を1つ取ってから上書きするので、元の内容はいつでも戻せる）。
+   ============================================================ */
+var Sync = {
+  configured: function(){ return !!(SYNC_FIREBASE.apiKey && SYNC_FIREBASE.projectId); },
+
+  genCode: function(){
+    var alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // 紛らわしい 0/O/1/I/L を除外
+    var bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    var s = "";
+    for (var i=0;i<16;i++) s += alphabet[bytes[i] % alphabet.length];
+    return s.replace(/(.{4})(?=.)/g, "$1-");
+  },
+  normalizeCode: function(raw){
+    var s = String(raw||"").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    return s.replace(/(.{4})(?=.)/g, "$1-");
+  },
+
+  _b64: function(bytes){
+    var bin = "";
+    for (var i=0;i<bytes.length;i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  },
+  _unb64: function(str){
+    var bin = atob(str);
+    var out = new Uint8Array(bin.length);
+    for (var i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+    return out;
+  },
+  _digest: function(text){ return crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)); },
+  _roomId: function(code){
+    return Sync._digest(code + "|kaitai-sync-room-v1").then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ("0"+b.toString(16)).slice(-2); }).join("");
+    });
+  },
+  _cryptoKey: function(code){
+    return Sync._digest(code + "|kaitai-sync-key-v1").then(function(buf){
+      return crypto.subtle.importKey("raw", buf, { name:"AES-GCM" }, false, ["encrypt","decrypt"]);
+    });
+  },
+  _encrypt: function(code, obj){
+    return Sync._cryptoKey(code).then(function(key){
+      var iv = new Uint8Array(12);
+      crypto.getRandomValues(iv);
+      var plain = new TextEncoder().encode(JSON.stringify(obj));
+      return crypto.subtle.encrypt({ name:"AES-GCM", iv:iv }, key, plain).then(function(cipherBuf){
+        return { iv: Sync._b64(iv), data: Sync._b64(new Uint8Array(cipherBuf)) };
+      });
+    });
+  },
+  _decrypt: function(code, ivB64, dataB64){
+    return Sync._cryptoKey(code).then(function(key){
+      return crypto.subtle.decrypt({ name:"AES-GCM", iv: Sync._unb64(ivB64) }, key, Sync._unb64(dataB64)).then(function(plainBuf){
+        return JSON.parse(new TextDecoder().decode(plainBuf));
+      });
+    });
+  },
+
+  _docUrl: function(roomId){
+    return "https://firestore.googleapis.com/v1/projects/" + encodeURIComponent(SYNC_FIREBASE.projectId) +
+      "/databases/(default)/documents/sync_rooms/" + roomId + "?key=" + encodeURIComponent(SYNC_FIREBASE.apiKey);
+  },
+
+  // 保管場所から取得。まだ無ければ null。通信/設定エラーは reject
+  fetchRoom: function(code){
+    if (!Sync.configured()) return Promise.reject(new Error("sync-not-configured"));
+    return Sync._roomId(code).then(function(roomId){
+      return fetch(Sync._docUrl(roomId)).then(function(res){
+        if (res.status === 404) return null;
+        if (!res.ok) throw new Error("firestore-get-" + res.status);
+        return res.json().then(function(doc){
+          var f = doc.fields || {};
+          var iv = f.iv && f.iv.stringValue;
+          var data = f.data && f.data.stringValue;
+          var updatedAt = f.updated_at && Number(f.updated_at.integerValue || 0);
+          if (!iv || !data) return null;
+          return Sync._decrypt(code, iv, data).then(function(bundle){
+            return { updatedAt: updatedAt || 0, bundle: bundle, dealCount: (bundle.deals||[]).length };
+          });
+        });
+      });
+    });
+  },
+
+  // ローカルの内容を暗号化して保管場所へ保存（無ければ作成・あれば丸ごと更新）
+  pushLocal: function(code){
+    if (!Sync.configured()) return Promise.reject(new Error("sync-not-configured"));
+    var updatedAt = DB.contentModifiedAt() || Date.now();
+    return Sync._roomId(code).then(function(roomId){
+      return Sync._encrypt(code, DB.syncBundle()).then(function(enc){
+        var body = { fields: {
+          iv: { stringValue: enc.iv },
+          data: { stringValue: enc.data },
+          updated_at: { integerValue: String(updatedAt) }
+        } };
+        return fetch(Sync._docUrl(roomId), {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        }).then(function(res){
+          if (!res.ok) throw new Error("firestore-put-" + res.status);
+          DB.saveSettings({ sync_code: code, sync_last_at: Date.now() });
+        });
+      });
+    });
+  },
+
+  // 保管場所の内容をこの端末に反映（room を渡せば再取得しない）
+  pullRemote: function(code, room){
+    var apply = function(r){
+      DB.applySyncBundle(r.bundle);
+      DB.saveSettings({ sync_code: code, sync_last_at: Date.now() });
+    };
+    if (room) { apply(room); return Promise.resolve(); }
+    return Sync.fetchRoom(code).then(function(r){ if (r) apply(r); });
+  },
+
+  // アプリを開くたびに自動で呼ぶ。合言葉が設定されている時だけ動く。失敗は無視（オフラインでも普通に使える）
+  autoRun: function(){
+    if (!Sync.configured()) return;
+    var code = DB.settings().sync_code;
+    if (!code) return;
+    Sync.fetchRoom(code).then(function(room){
+      if (!room){ return Sync.pushLocal(code); }
+      var local = DB.contentModifiedAt();
+      if (room.updatedAt > local){
+        DB.applySyncBundle(room.bundle);
+        DB.saveSettings({ sync_last_at: Date.now() });
+        render();
+      } else if (local > room.updatedAt){
+        return Sync.pushLocal(code);
+      } else {
+        DB.saveSettings({ sync_last_at: Date.now() });
+      }
+    }).catch(function(e){ logError("sync-auto", (e && e.message) || String(e)); });
   }
 };
 
@@ -2150,13 +2350,16 @@ function openDialog(opts){
       (opts.desc ? '<p>'+esc(opts.desc)+'</p>' : "")+
       '<div id="dialogBody">'+(opts.body||"")+'</div>'+
       '<div class="dialog__actions">'+
-        (opts.hideCancel ? "" : '<button class="btn btn--ghost" data-act="cancel">キャンセル</button>')+
+        (opts.hideCancel ? "" : '<button class="btn btn--ghost" data-act="cancel">'+esc(opts.cancelLabel||"キャンセル")+'</button>')+
         '<button class="btn '+(opts.danger?'btn--danger':'btn--primary')+'" data-act="ok">'+esc(opts.confirmLabel||"OK")+'</button>'+
       '</div>'+
     '</div>';
   bd.classList.add("is-open");
   function close(){ bd.classList.remove("is-open"); bd.innerHTML=""; }
-  bd.querySelector('[data-act="cancel"]') && bd.querySelector('[data-act="cancel"]').addEventListener("click", close);
+  bd.querySelector('[data-act="cancel"]') && bd.querySelector('[data-act="cancel"]').addEventListener("click", function(){
+    if (opts.onCancel) opts.onCancel();
+    close();
+  });
   bd.querySelector('[data-act="ok"]').addEventListener("click", function(){
     var keepOpen = opts.onConfirm && opts.onConfirm(bd.querySelector("#dialogBody"));
     if (!keepOpen) close();
@@ -2616,25 +2819,6 @@ function ViewDashboard(){
   html +=
     '<div class="page-head only-desktop"><div><h1>ダッシュボード</h1>'+
     '<p>'+fmtDateFull(isoToday())+' ・ 今日やるべきことを上から順に。</p></div></div>';
-
-  // 手続き・期限のお知らせ（会社の登録期限 ＋ 案件ごとの届出締切）
-  (function(){
-    var lic = licenseAlerts();
-    if (!lic.length) return;
-    var hot = lic.some(function(x){ return x.level !== "soon"; });
-    var col = hot ? "var(--danger)" : "var(--warning)";
-    var body = '<div class="card" style="margin-bottom:14px;border-color:color-mix(in srgb,'+col+' 45%,var(--border))">'+
-      '<div style="font-weight:800;font-size:13.5px;color:'+col+'">手続き・期限のお知らせ</div>'+
-      '<div class="prio" style="margin-top:8px">';
-    lic.forEach(function(x){
-      var t = x.days < 0 ? "期限を過ぎています" : "あと " + x.days + " 日";
-      body += '<div class="prio__item" data-goto-view="/settings">'+
-        '<div class="prio__body"><div class="prio__co">'+esc(x.label)+' <span class="badge '+(x.level==="soon"?"pr-mid":"pr-high")+'">'+t+'</span></div>'+
-        '<div class="prio__sub">期限 '+fmtDateFull(x.iso)+'</div></div></div>';
-    });
-    body += '</div></div>';
-    html += body;
-  })();
 
   // バックアップ催促（端末外バックアップから7日以上／未実施のとき）
   (function(){
@@ -5573,6 +5757,36 @@ function landAiPrompt(text, single){
 /* ============================================================
    VIEW: Settings
    ============================================================ */
+// r116: 他端末との同期カード（Settings）
+function syncLastLabel(ts){
+  if (!ts) return "まだ一度もなし";
+  var mins = Math.floor((Date.now() - ts) / 60000);
+  if (mins < 1) return "たった今";
+  if (mins < 60) return mins + "分前";
+  var hrs = Math.floor(mins / 60);
+  if (hrs < 24) return hrs + "時間前";
+  return Math.floor(hrs / 24) + "日前";
+}
+function syncCardHTML(s){
+  if (s.sync_code){
+    return '<div class="card"><div class="section-label">他の端末と同期</div>'+
+      '<div class="kv" style="margin-bottom:6px"><dt>合言葉</dt><dd style="font-family:monospace;letter-spacing:.02em">'+esc(s.sync_code)+'</dd>'+
+        '<dt>最終同期</dt><dd>'+esc(syncLastLabel(s.sync_last_at))+'</dd></div>'+
+      '<div class="row">'+
+        '<button class="btn btn--soft btn--sm" data-act="sync-now">今すぐ同期</button>'+
+        '<button class="btn btn--ghost btn--sm" data-act="sync-off">連携を解除</button>'+
+      '</div>'+
+      '<p class="muted" style="font-size:11px;margin:6px 0 0">アプリを開くたびに、新しい方の内容に自動でそろいます。内容は暗号化して送るため、保管サービス側からも読めません。</p>'+
+    '</div>';
+  }
+  return '<div class="card"><div class="section-label">他の端末と同期</div>'+
+    '<p class="muted" style="font-size:11.5px;margin:0 0 6px">決めた2台の端末で、案件・連絡ログなどを同じ内容にそろえられます（添付ファイルは対象外・端末ごとです）。他の人が使っている解体サーチとは混ざりません。</p>'+
+    '<div class="row">'+
+      '<button class="btn btn--soft btn--sm" data-act="sync-new">合言葉を作って始める</button>'+
+      '<button class="btn btn--ghost btn--sm" data-act="sync-join">合言葉を入力する</button>'+
+    '</div>'+
+  '</div>';
+}
 function ViewSettings(){
   var s = DB.settings();
   var counts = { deals:DB.deals().length, events:DB.events().length, prices:DB.prices().length };
@@ -5582,23 +5796,13 @@ function ViewSettings(){
   var lastExp = meta0.lastExport ? (daysBetween(meta0.lastExport, isoToday()) === 0 ? "今日" : daysBetween(meta0.lastExport, isoToday()) + "日前") : "まだ一度もなし";
   var html =
     '<div class="page-head only-desktop"><div><h1>設定</h1><p>表示テーマとデータ管理。</p></div></div>'+
-    '<div class="stack" style="max-width:640px">'+
+    '<div class="stack settings-stack" style="max-width:640px">'+
       '<div class="card"><div class="section-label">今月の目標</div>'+
-        '<div class="form-grid">'+
+        '<div class="form-grid-2">'+
           fieldInput("目標 成約件数 / 月","goal_won",s.goal_won||"",{type:"number",inputmode:"numeric",placeholder:"例：4"})+
           fieldInput("目標 利益 / 月（円）","goal_profit",s.goal_profit||"",{type:"number",inputmode:"numeric",placeholder:"例：800000"})+
         '</div>'+
-        '<div class="field__hint" style="margin-top:8px">設定するとダッシュボード（今月表示）に達成度が出ます。</div>'+
-      '</div>'+
-      '<div class="card"><div class="section-label">自社の登録・許可</div>'+
-        '<div class="stack">'+
-          fieldInput("自社名（メモに使用）","own_company",s.own_company||"",{placeholder:"例：〇〇解体工業"})+
-          '<div class="form-grid">'+
-            dateField("解体工事業登録の有効期限","demo_reg_expiry",s.demo_reg_expiry||"",{hint:"5年ごと更新。期限の30日前までに手続きを"})+
-            dateField("建設業許可（解体）の有効期限","const_license_expiry",s.const_license_expiry||"",{hint:"該当する場合のみ。5年ごと更新"})+
-          '</div>'+
-        '</div>'+
-        '<div class="field__hint" style="margin-top:8px">期限の90日前になると、ダッシュボードでお知らせします。無登録での施工は違法です。</div>'+
+        '<div class="field__hint" style="margin-top:4px">設定するとダッシュボード（今月表示）に達成度が出ます。</div>'+
       '</div>'+
       '<div class="card"><div class="section-label">表示テーマ</div>'+
         '<div class="segmented">'+
@@ -5608,59 +5812,63 @@ function ViewSettings(){
         '</div>'+
       '</div>'+
       '<div class="card"><div class="section-label">データ</div>'+
-        '<div class="kv" style="margin-bottom:14px"><dt>案件</dt><dd>'+counts.deals+' 件</dd>'+
-          '<dt>営業履歴</dt><dd>'+counts.events+' 件</dd></div>'+
+        '<div class="form-grid-2" style="margin-bottom:8px">'+
+          '<div><div class="muted" style="font-size:10.5px">案件</div><div style="font-weight:800;font-size:15px">'+counts.deals+' 件</div></div>'+
+          '<div><div class="muted" style="font-size:10.5px">営業履歴</div><div style="font-weight:800;font-size:15px">'+counts.events+' 件</div></div>'+
+        '</div>'+
         '<div class="row">'+
-          '<button class="btn btn--soft" data-act="export">'+icon("inbox")+'バックアップを保存</button>'+
-          '<button class="btn btn--soft" data-act="import">バックアップから復元</button>'+
+          '<button class="btn btn--soft btn--sm" data-act="export">'+icon("inbox")+'バックアップを保存</button>'+
+          '<button class="btn btn--soft btn--sm" data-act="import">バックアップから復元</button>'+
         '</div>'+
         '<div class="divider"></div>'+
-        '<button class="btn btn--danger-soft" data-act="reset">'+icon("trash")+'全データを初期化</button>'+
-        '<p class="muted" style="font-size:12px;margin:10px 0 0">データはこの端末の中だけに保存されます。機種変更やデータ移行のときは、上の「バックアップを保存」で書き出し → 新しい端末で「バックアップから復元」してください。</p>'+
+        '<button class="btn btn--danger-soft btn--sm" data-act="reset">'+icon("trash")+'全データを初期化</button>'+
+        '<p class="muted" style="font-size:11px;margin:6px 0 0">データはこの端末の中だけに保存されます。機種変更やデータ移行のときは、上の「バックアップを保存」で書き出し → 新しい端末で「バックアップから復元」してください。</p>'+
       '</div>'+
 
+      (Sync.configured() ? syncCardHTML(s) : '')+
+
       '<div class="card"><div class="section-label">自動バックアップ（この端末内）</div>'+
-        '<p class="muted" style="font-size:12px;margin:0 0 10px">アプリを開くたびに自動で1日1回控えを保存します（初期化・読み込みの直前も自動保存）。誤って消した／読み込みに失敗した時は、ここから戻せます。<br>'+
+        '<p class="muted" style="font-size:11px;margin:0 0 6px">アプリを開くたびに自動で1日1回控えを保存します（初期化・読み込みの直前も自動保存）。誤って消した／読み込みに失敗した時は、ここから戻せます。<br>'+
           '<b>最後のバックアップ保存：'+esc(lastExp)+'</b>　端末が変わるとデータは移りません。時々「バックアップを保存」で端末の外にも保管してください。</p>'+
         (snaps.length
           ? '<div class="table-wrap"><table class="table" style="min-width:auto"><thead><tr><th>日時</th><th>きっかけ</th><th class="num">案件</th><th></th></tr></thead><tbody>'+
             snaps.slice(0, 5).map(function(sn){
               var dt = new Date(sn.at);
               var lbl = (dt.getMonth()+1)+"/"+dt.getDate()+" "+String(dt.getHours()).padStart(2,"0")+":"+String(dt.getMinutes()).padStart(2,"0");
-              return '<tr><td style="white-space:nowrap">'+esc(lbl)+'</td><td style="font-size:12px">'+esc(sn.reason||"auto")+'</td>'+
+              return '<tr><td style="white-space:nowrap">'+esc(lbl)+'</td><td style="font-size:11.5px">'+esc(sn.reason||"auto")+'</td>'+
                 '<td class="num">'+(sn.counts?sn.counts.deals:"?")+'</td>'+
                 '<td><button class="btn btn--soft btn--sm" data-restore="'+esc(sn.id)+'">この状態に戻す</button></td></tr>';
             }).join("")+
             '</tbody></table></div>'+
-            (snaps.length > 5 ? '<p class="muted" style="font-size:11.5px;margin:8px 0 0">ほか '+(snaps.length-5)+' 件の控え（古いものから自動で消えます）</p>' : '')
-          : '<p class="muted" style="font-size:12.5px">まだ控えはありません（データを入れて一度開き直すと作成されます）。</p>')+
-        '<div class="row" style="margin-top:10px"><button class="btn btn--ghost btn--sm" data-act="snapnow">今すぐ控え</button></div>'+
+            (snaps.length > 5 ? '<p class="muted" style="font-size:11px;margin:6px 0 0">ほか '+(snaps.length-5)+' 件の控え（古いものから自動で消えます）</p>' : '')
+          : '<p class="muted" style="font-size:12px">まだ控えはありません（データを入れて一度開き直すと作成されます）。</p>')+
+        '<div class="row" style="margin-top:8px"><button class="btn btn--ghost btn--sm" data-act="snapnow">今すぐ控え</button></div>'+
       '</div>'+
 
       '<div class="card"><div class="section-label">システム（不具合対策）</div>'+
-        (SAFE_MODE ? '<div style="color:var(--warning);font-weight:700;font-size:13px;margin-bottom:8px">現在安全モードで動作中です</div>' : '')+
-        '<p class="muted" style="font-size:12.5px;margin:0 0 10px">画面が固まる・エラーが出るときの窓口です。エラーは自動で記録され、下からコピーして共有できます。'+
+        (SAFE_MODE ? '<div style="color:var(--warning);font-weight:700;font-size:12.5px;margin-bottom:5px">現在安全モードで動作中です</div>' : '')+
+        '<p class="muted" style="font-size:11.5px;margin:0 0 6px">画面が固まる・エラーが出るときの窓口です。エラーは自動で記録され、下からコピーして共有できます。'+
           '起動できない時は URL の末尾に <code>?safe=1</code> を付けると最小構成で開きます。</p>'+
-        '<p class="muted" style="font-size:12px;margin:0 0 10px;padding:8px 10px;background:var(--surface-3);border-radius:8px">'+
+        '<p class="muted" style="font-size:11px;margin:0 0 6px;padding:6px 8px;background:var(--surface-3);border-radius:8px">'+
           '<b>アプリ更新でデータは消えません。</b>案件・写真は端末側（このブラウザ）に保存され、コードを入れ替えても保持されます。'+
           'さらに、更新後の初回起動時・初期化/読込の直前・毎日1回、自動でバックアップを取り、案件を全消去するような書き込みはブロックします。'+
           '万一見当たらない時も「自動バックアップ」から戻せます。</p>'+
-        '<div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:10px">'+
+        '<div class="row" style="flex-wrap:wrap;gap:5px;margin-bottom:6px">'+
           '<button class="btn btn--soft btn--sm" data-act="updatecheck">最新版を確認して再読み込み</button>'+
           '<button class="btn btn--soft btn--sm" data-act="safemode">安全モードで開く</button>'+
           '<button class="btn btn--ghost btn--sm" data-act="errcopy">不具合の記録をコピー</button>'+
           '<button class="btn btn--ghost btn--sm" data-act="errclear">不具合の記録を消去</button>'+
         '</div>'+
         (errLog.length
-          ? '<pre style="font-size:10.5px;white-space:pre-wrap;word-break:break-word;color:var(--muted);max-height:150px;overflow:auto;margin:0;background:var(--surface-3);border-radius:8px;padding:10px">'+
+          ? '<pre style="font-size:10px;white-space:pre-wrap;word-break:break-word;color:var(--muted);max-height:140px;overflow:auto;margin:0;background:var(--surface-3);border-radius:8px;padding:8px">'+
               esc(errLog.slice(-8).reverse().map(function(x){ return x.at.replace("T"," ").slice(0,19)+"  ["+x.kind+"] "+x.msg+(x.extra?"  ("+x.extra+")":""); }).join("\n"))+
             '</pre>'
-          : '<p class="muted" style="font-size:12.5px;margin:0">記録されたエラーはありません。</p>')+
+          : '<p class="muted" style="font-size:12px;margin:0">記録されたエラーはありません。</p>')+
       '</div>'+
 
       '<div class="card"><div class="section-label">このアプリについて</div>'+
-        '<p class="muted" style="font-size:13px;margin:0 0 6px"><b>バージョン: '+APP_BUILD+'</b>（この番号を伝えてもらえると、最新かどうか確認できます）</p>'+
-        '<p class="muted" style="font-size:13px;margin:0">解体工事の営業を、案件登録から成約・利益・追客まで一画面で管理するツールです。</p>'+
+        '<p class="muted" style="font-size:12.5px;margin:0 0 5px"><b>バージョン: '+APP_BUILD+'</b>（この番号を伝えてもらえると、最新かどうか確認できます）</p>'+
+        '<p class="muted" style="font-size:12.5px;margin:0">解体工事の営業を、案件登録から成約・利益・追客まで一画面で管理するツールです。</p>'+
       '</div>'+
     '</div>';
 
@@ -5720,14 +5928,6 @@ function ViewSettings(){
         var el = root.querySelector('[data-field="'+f+'"]');
         if (el) el.addEventListener("change", function(){
           var patch = {}; patch[f] = num(el.value) || 0; DB.saveSettings(patch); toast("目標を保存しました");
-        });
-      });
-      // 自社の登録・許可
-      wireDateFields(root);
-      ["own_company","demo_reg_expiry","const_license_expiry"].forEach(function(f){
-        var el = root.querySelector('[data-field="'+f+'"]');
-        if (el) el.addEventListener("change", function(){
-          var patch = {}; patch[f] = el.value || ""; DB.saveSettings(patch); toast("保存しました");
         });
       });
       root.querySelector('[data-act="export"]').onclick = function(){
@@ -5820,6 +6020,107 @@ function ViewSettings(){
       };
       root.querySelector('[data-act="reset"]').onclick = function(){
         confirmDialog("本当に初期化しますか？", "すべての案件・履歴・単価が削除されます。直前の状態は「自動バックアップ」に残るので、間違えたら戻せます。", "初期化する", function(){ DB.clearAll(); toast("初期化しました（自動バックアップに退避済み）"); navTo("/"); render(); }, true);
+      };
+
+      // r116: 他端末と同期
+      var syncNewBtn = root.querySelector('[data-act="sync-new"]');
+      if (syncNewBtn) syncNewBtn.onclick = function(){
+        var code = Sync.genCode();
+        openDialog({
+          title:"合言葉ができました",
+          desc:"もう一方の端末の「設定」→「他の端末と同期」→「合言葉を入力する」に、この合言葉を入力してください。",
+          body:'<textarea id="syncCodeText" class="input" readonly style="font-family:monospace;font-size:17px;letter-spacing:.03em;text-align:center;min-height:48px">'+esc(code)+'</textarea>'+
+            '<button type="button" class="btn btn--ghost btn--sm" id="syncCodeCopy" style="margin-top:8px">コピーする</button>',
+          confirmLabel:"これで始める",
+          onMount:function(b){
+            b.querySelector("#syncCodeCopy").onclick = function(){
+              var t = b.querySelector("#syncCodeText"); t.focus(); t.select();
+              var ok=false; try { ok = document.execCommand("copy"); } catch(e){}
+              if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(code); ok = true; }
+              toast(ok ? "コピーしました" : "長押しで選択してコピーしてください");
+            };
+          },
+          onConfirm:function(){
+            Sync.pushLocal(code).then(function(){ toast("同期を始めました"); render(); })
+              .catch(function(){
+                DB.saveSettings({ sync_code:code });
+                toast("今は保存できませんでした。ネット接続時に自動で再試行します");
+                render();
+              });
+          }
+        });
+      };
+      var syncJoinBtn = root.querySelector('[data-act="sync-join"]');
+      if (syncJoinBtn) syncJoinBtn.onclick = function(){
+        var closeJoinDialog = openDialog({
+          title:"合言葉を入力",
+          desc:"もう一方の端末に表示された合言葉を入力してください。",
+          body:'<input id="syncCodeInput" class="input" placeholder="例：AB3D-9KQP-2XYZ-77MN" style="font-family:monospace;letter-spacing:.03em;text-transform:uppercase">',
+          confirmLabel:"連携する",
+          onMount:function(b){ b.querySelector("#syncCodeInput").focus(); },
+          onConfirm:function(b){
+            var inp = b.querySelector("#syncCodeInput");
+            var code = Sync.normalizeCode(inp.value);
+            if (code.length < 19){ markFieldError(inp, "合言葉を確認してください"); return true; }
+            inp.disabled = true;
+            Sync.fetchRoom(code).then(function(room){
+              if (!room){
+                DB.saveSettings({ sync_code:code });
+                closeJoinDialog();
+                return Sync.pushLocal(code).then(function(){ toast("連携しました"); render(); });
+              }
+              var localCount = DB.deals().length;
+              var cloudCount = room.dealCount;
+              if (localCount === 0){
+                closeJoinDialog();
+                return Sync.pullRemote(code, room).then(function(){ toast("連携しました"); navTo("/"); render(); });
+              }
+              if (cloudCount === 0){
+                DB.saveSettings({ sync_code:code });
+                closeJoinDialog();
+                return Sync.pushLocal(code).then(function(){ toast("連携しました"); render(); });
+              }
+              // 両方にすでにデータがある → どちらを基準にするか確認（外した方もこの端末の自動バックアップに残る）
+              closeJoinDialog();
+              openDialog({
+                title:"どちらの内容にそろえますか？",
+                desc:"この端末に"+localCount+"件、もう一方に"+cloudCount+"件の案件があります。選ばなかった方の内容も、この端末の「自動バックアップ」に残ります。",
+                cancelLabel:"この端末を使う（"+localCount+"件）",
+                confirmLabel:"もう一方を使う（"+cloudCount+"件）",
+                onCancel:function(){
+                  DB.saveSettings({ sync_code:code });
+                  Sync.pushLocal(code).then(function(){ toast("連携しました"); render(); });
+                },
+                onConfirm:function(){
+                  Sync.pullRemote(code, room).then(function(){ toast("連携しました"); navTo("/"); render(); });
+                }
+              });
+            }).catch(function(){
+              toast("通信できませんでした。ネット接続を確認してください");
+              inp.disabled = false;
+            });
+            return true;   // 上のダイアログは非同期処理の中でこちらから閉じる
+          }
+        });
+      };
+      var syncNowBtn = root.querySelector('[data-act="sync-now"]');
+      if (syncNowBtn) syncNowBtn.onclick = function(){
+        syncNowBtn.disabled = true;
+        var code = DB.settings().sync_code;
+        Sync.fetchRoom(code).then(function(room){
+          if (!room) return Sync.pushLocal(code);
+          var local = DB.contentModifiedAt();
+          if (room.updatedAt > local) { DB.applySyncBundle(room.bundle); DB.saveSettings({ sync_last_at:Date.now() }); }
+          else if (local > room.updatedAt) return Sync.pushLocal(code);
+          else DB.saveSettings({ sync_last_at:Date.now() });
+        }).then(function(){ toast("同期しました"); render(); })
+          .catch(function(){ toast("通信できませんでした。ネット接続を確認してください"); syncNowBtn.disabled = false; });
+      };
+      var syncOffBtn = root.querySelector('[data-act="sync-off"]');
+      if (syncOffBtn) syncOffBtn.onclick = function(){
+        confirmDialog("連携を解除しますか？", "この端末のデータはそのまま残ります。以後、他の端末の内容とはそろわなくなります。", "解除する", function(){
+          DB.saveSettings({ sync_code:"" }); toast("連携を解除しました"); render();
+        });
       };
       var snapNow = root.querySelector('[data-act="snapnow"]');
       if (snapNow) snapNow.onclick = function(){ DB.takeSnapshot("手動"); toast("控えを保存しました"); render(); };
@@ -6116,6 +6417,11 @@ function boot(){
 
   if (!location.hash) location.hash = "/";
   render();
+
+  // r116: 他端末同期（設定済みの時だけ）。表示をブロックしないよう、描画後にバックグラウンドで実行
+  if (!SAFE_MODE){
+    try { setTimeout(function(){ Sync.autoRun(); }, 600); } catch(e){}
+  }
 
   // ここまで来たら起動成功 → クラッシュカウンタをリセット & 現在のバージョンを記録
   try { sessionStorage.setItem("dcrm.bootfail", "0"); } catch(e){}
