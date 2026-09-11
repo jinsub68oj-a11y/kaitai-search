@@ -815,9 +815,12 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-12 r127";
+var APP_BUILD = "2026-09-12 r128";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-12 r128": [
+    "設定の「システム（不具合対策）」欄を削除しました。「最新版を確認して再読み込み」は「他の端末と同期」の「今すぐ同期」の隣に移動しました"
+  ],
   "2026-09-12 r127": [
     "他の端末と同期で、案件の添付ファイル（写真・書類）も一緒に共有できるようにしました。大きな写真は自動で軽くしてから送ります"
   ],
@@ -5915,6 +5918,7 @@ function syncCardHTML(s){
         '<dt>最終同期</dt><dd>'+esc(syncLastLabel(s.sync_last_at))+'</dd></div>'+
       '<div class="row">'+
         '<button class="btn btn--soft btn--sm" data-act="sync-now">今すぐ同期</button>'+
+        '<button class="btn btn--soft btn--sm" data-act="updatecheck">最新版を確認して再読み込み</button>'+
         '<button class="btn btn--ghost btn--sm" data-act="sync-off">連携を解除</button>'+
       '</div>'+
       '<p class="muted" style="font-size:11px;margin:6px 0 0">アプリを開くたびに、新しい方の内容に自動でそろいます。内容は暗号化して送るため、保管サービス側からも読めません。</p>'+
@@ -5932,7 +5936,6 @@ function ViewSettings(){
   var s = DB.settings();
   var counts = { deals:DB.deals().length, events:DB.events().length, prices:DB.prices().length };
   var snaps = DB.snapshots().slice().reverse(); // 新しい順
-  var errLog = readErrLog();
   var meta0 = (function(){ try { return JSON.parse(localStorage.getItem("dcrm.meta")||"{}"); } catch(e){ return {}; } })();
   var lastExp = meta0.lastExport ? (daysBetween(meta0.lastExport, isoToday()) === 0 ? "今日" : daysBetween(meta0.lastExport, isoToday()) + "日前") : "まだ一度もなし";
   var html =
@@ -5986,27 +5989,6 @@ function ViewSettings(){
         '<div class="row" style="margin-top:8px"><button class="btn btn--ghost btn--sm" data-act="snapnow">今すぐ控え</button></div>'+
       '</div>'+
 
-      '<div class="card"><div class="section-label">システム（不具合対策）</div>'+
-        (SAFE_MODE ? '<div style="color:var(--warning);font-weight:700;font-size:12.5px;margin-bottom:5px">現在安全モードで動作中です</div>' : '')+
-        '<p class="muted" style="font-size:11.5px;margin:0 0 6px">画面が固まる・エラーが出るときの窓口です。エラーは自動で記録され、下からコピーして共有できます。'+
-          '起動できない時は URL の末尾に <code>?safe=1</code> を付けると最小構成で開きます。</p>'+
-        '<p class="muted" style="font-size:11px;margin:0 0 6px;padding:6px 8px;background:var(--surface-3);border-radius:8px">'+
-          '<b>アプリ更新でデータは消えません。</b>案件・写真は端末側（このブラウザ）に保存され、コードを入れ替えても保持されます。'+
-          'さらに、更新後の初回起動時・初期化/読込の直前・毎日1回、自動でバックアップを取り、案件を全消去するような書き込みはブロックします。'+
-          '万一見当たらない時も「自動バックアップ」から戻せます。</p>'+
-        '<div class="row" style="flex-wrap:wrap;gap:5px;margin-bottom:6px">'+
-          '<button class="btn btn--soft btn--sm" data-act="updatecheck">最新版を確認して再読み込み</button>'+
-          '<button class="btn btn--soft btn--sm" data-act="safemode">安全モードで開く</button>'+
-          '<button class="btn btn--ghost btn--sm" data-act="errcopy">不具合の記録をコピー</button>'+
-          '<button class="btn btn--ghost btn--sm" data-act="errclear">不具合の記録を消去</button>'+
-        '</div>'+
-        (errLog.length
-          ? '<pre style="font-size:10px;white-space:pre-wrap;word-break:break-word;color:var(--muted);max-height:140px;overflow:auto;margin:0;background:var(--surface-3);border-radius:8px;padding:8px">'+
-              esc(errLog.slice(-8).reverse().map(function(x){ return x.at.replace("T"," ").slice(0,19)+"  ["+x.kind+"] "+x.msg+(x.extra?"  ("+x.extra+")":""); }).join("\n"))+
-            '</pre>'
-          : '<p class="muted" style="font-size:12px;margin:0">記録されたエラーはありません。</p>')+
-      '</div>'+
-
       '<div class="card"><div class="section-label">このアプリについて</div>'+
         '<p class="muted" style="font-size:12.5px;margin:0 0 5px"><b>バージョン: '+APP_BUILD+'</b>（この番号を伝えてもらえると、最新かどうか確認できます）</p>'+
         '<p class="muted" style="font-size:12.5px;margin:0">解体工事の営業を、案件登録から成約・利益・追客まで一画面で管理するツールです。</p>'+
@@ -6045,25 +6027,6 @@ function ViewSettings(){
         } catch(e){}
         var t = setTimeout(reload, 2500);   // 念のためのタイムアウト
         Promise.all(jobs).then(function(){ clearTimeout(t); reload(); }, function(){ clearTimeout(t); reload(); });
-      };
-      var sm = root.querySelector('[data-act="safemode"]');
-      if (sm) sm.onclick = function(){
-        location.href = location.href.split("#")[0].split("?")[0] + "?safe=1";
-      };
-      var ecp = root.querySelector('[data-act="errcopy"]');
-      if (ecp) ecp.onclick = function(){
-        var txt = "解体サーチ 不具合の記録  build " + APP_BUILD + "\n" +
-          readErrLog().map(function(x){ return x.at + "  [" + x.kind + "] " + x.msg + (x.extra ? "  (" + x.extra + ")" : "") + "  @" + (x.path||""); }).join("\n");
-        var ok = false;
-        try { var t=document.createElement("textarea"); t.value=txt; document.body.appendChild(t); t.select(); ok=document.execCommand("copy"); document.body.removeChild(t); } catch(e){}
-        if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt); ok=true; }
-        toast(ok ? "不具合の記録をコピーしました" : "コピーできませんでした");
-      };
-      var ecl = root.querySelector('[data-act="errclear"]');
-      if (ecl) ecl.onclick = function(){
-        try { localStorage.removeItem("dcrm.errlog"); } catch(e){}
-        Object.keys(localStorage).filter(function(k){ return /\.corrupt$/.test(k) && k.indexOf("dcrm.")===0; }).forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
-        toast("不具合の記録を消去しました"); render();
       };
       ["goal_won","goal_profit"].forEach(function(f){
         var el = root.querySelector('[data-field="'+f+'"]');
@@ -6565,7 +6528,7 @@ function boot(){
   // 安全モード / 破損データ / データ消失 の通知バナー
   try {
     if (SAFE_MODE){
-      flashError("安全モードで起動しました（自動バックアップは停止中）。設定＞システム を確認してください。");
+      flashError("安全モードで起動しました（自動バックアップは停止中）。");
     } else {
       var corrupt = Object.keys(localStorage).filter(function(k){ return /^dcrm\..*\.corrupt$/.test(k); });
       var snapBest = 0;
@@ -6573,7 +6536,7 @@ function boot(){
       if (DB.deals().length === 0 && snapBest > 0){
         flashError("案件データが見当たりません。消えていません → 設定＞自動バックアップ から復元してください。");
       } else if (corrupt.length){
-        flashError("一部データの読み込みに問題がありました。設定＞システム、または自動バックアップから復元できます。");
+        flashError("一部データの読み込みに問題がありました。設定＞自動バックアップから復元できます。");
       }
     }
   } catch(e){}
