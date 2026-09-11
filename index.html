@@ -815,9 +815,12 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-12 r126";
+var APP_BUILD = "2026-09-12 r127";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-12 r127": [
+    "他の端末と同期で、案件の添付ファイル（写真・書類）も一緒に共有できるようにしました。大きな写真は自動で軽くしてから送ります"
+  ],
   "2026-09-12 r126": [
     "全機能を見直し、不具合を2件修正しました。①案件詳細で「編集」を押した後もボタンが消えずに残っていた不具合、②追客管理の「対応した」ダイアログで選択肢が古い表記のままだった不具合"
   ],
@@ -1474,7 +1477,8 @@ var DB = {
       cash_on_hand:null, cash_on_hand_on:"",
       last_prices:[],   // r64: 新規案件に引き継ぐ「前回使った単価」
       sync_code:"", sync_last_at:0,
-      sync_synced_mtime:0, sync_synced_remote_at:0 }, read(K.settings, {}));   // r116: 他端末同期の合言葉・最終同期時刻／r124: 前回同期時点の記録（端末の時計のズレに左右されない判定用）
+      sync_synced_mtime:0, sync_synced_remote_at:0,
+      sync_pushed_files:{} }, read(K.settings, {}));   // r116: 他端末同期の合言葉・最終同期時刻／r124: 前回同期時点の記録（端末の時計のズレに左右されない判定用）／r127: 送信済み添付ファイルIDの記録
   },
   saveSettings: function(patch){
     var s = Object.assign(DB.settings(), patch); write(K.settings, s); return s;
@@ -1996,10 +2000,37 @@ var Sync = {
       });
     });
   },
+  // r127: 添付ファイル用。JSON化せず生バイトのまま暗号化（base64を二重に挟まないためサイズが1.3倍程度で済む）
+  _encryptBytes: function(code, arrayBuffer){
+    return Sync._cryptoKey(code).then(function(key){
+      var iv = new Uint8Array(12);
+      crypto.getRandomValues(iv);
+      return crypto.subtle.encrypt({ name:"AES-GCM", iv:iv }, key, arrayBuffer).then(function(cipherBuf){
+        return { iv: Sync._b64(iv), data: Sync._b64(new Uint8Array(cipherBuf)) };
+      });
+    });
+  },
+  _decryptBytes: function(code, ivB64, dataB64){
+    return Sync._cryptoKey(code).then(function(key){
+      return crypto.subtle.decrypt({ name:"AES-GCM", iv: Sync._unb64(ivB64) }, key, Sync._unb64(dataB64)).then(function(plainBuf){
+        return new Uint8Array(plainBuf);
+      });
+    });
+  },
 
   _docUrl: function(roomId){
     return "https://firestore.googleapis.com/v1/projects/" + encodeURIComponent(SYNC_FIREBASE.projectId) +
       "/databases/(default)/documents/sync_rooms/" + roomId + "?key=" + encodeURIComponent(SYNC_FIREBASE.apiKey);
+  },
+  // r127: 添付ファイル1件＝サブコレクションの1ドキュメント（sync_rooms/{roomId}/files/{fileId}）
+  _fileDocUrl: function(roomId, fileId){
+    return "https://firestore.googleapis.com/v1/projects/" + encodeURIComponent(SYNC_FIREBASE.projectId) +
+      "/databases/(default)/documents/sync_rooms/" + roomId + "/files/" + fileId + "?key=" + encodeURIComponent(SYNC_FIREBASE.apiKey);
+  },
+  _allFileRefs: function(){
+    var out = {};
+    DB.deals().forEach(function(d){ (d.files||[]).forEach(function(f){ if (f && f.id) out[f.id] = f; }); });
+    return out;
   },
 
   // 保管場所から取得。まだ無ければ null。通信/設定エラーは reject
@@ -2042,6 +2073,7 @@ var Sync = {
           if (!res.ok) throw new Error("firestore-put-" + res.status);
           // r124: 「前回同期した時点」を記録（端末どうしの時計のズレに左右されない判定のため）
           DB.saveSettings({ sync_code: code, sync_last_at: Date.now(), sync_synced_mtime: updatedAt, sync_synced_remote_at: updatedAt });
+          return Sync.pushFiles(code);   // r127: 添付ファイルも送る
         });
       });
     });
@@ -2052,9 +2084,10 @@ var Sync = {
     var apply = function(r){
       DB.applySyncBundle(r.bundle);
       DB.saveSettings({ sync_code: code, sync_last_at: Date.now(), sync_synced_mtime: DB.contentModifiedAt(), sync_synced_remote_at: r.updatedAt });
+      return Sync.pullFiles(code);   // r127: 添付ファイルも取り込む
     };
-    if (room) { apply(room); return Promise.resolve(); }
-    return Sync.fetchRoom(code).then(function(r){ if (r) apply(r); });
+    if (room) { return apply(room); }
+    return Sync.fetchRoom(code).then(function(r){ if (r) return apply(r); });
   },
 
   // r124: push/pull どちらが必要か判定して実行。端末どうしの時計を比較するのではなく、
@@ -2074,11 +2107,102 @@ var Sync = {
       // 両方が同時に変わっている（本当の衝突）時だけ、やむを得ず時計の値で決める
       var pull = remoteChanged && (!localChanged || room.updatedAt > local);
       if (pull){
-        DB.applySyncBundle(room.bundle);
-        DB.saveSettings({ sync_last_at: Date.now(), sync_synced_mtime: DB.contentModifiedAt(), sync_synced_remote_at: room.updatedAt });
-        return "pulled";
+        return Sync.pullRemote(code, room).then(function(){ return "pulled"; });
       }
       return Sync.pushLocal(code).then(function(){ return "pushed"; });
+    });
+  },
+
+  // r127: 添付ファイル（写真・書類）の同期。1件ずつ処理し、1件失敗しても全体は止めない。
+  // 画像は700KB超なら自動で縮小・再圧縮してから送る（Firestore1ドキュメント1MB制限のため）。
+  // それでも大きい・画像でないファイルはスキップ（サイズ超過は次回も再送しない＝毎回時間がかかるのを防ぐ）。
+  _FILE_SIZE_LIMIT: 650000,
+  _compressImage: function(blob, maxDim, quality){
+    return new Promise(function(resolve){
+      var url = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function(){
+        try {
+          var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+          var scale = Math.min(1, maxDim / Math.max(w, h));
+          var cw = Math.max(1, Math.round(w * scale)), ch = Math.max(1, Math.round(h * scale));
+          var canvas = document.createElement("canvas");
+          canvas.width = cw; canvas.height = ch;
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, cw, ch);
+          URL.revokeObjectURL(url);
+          canvas.toBlob(function(outBlob){ resolve(outBlob || blob); }, "image/jpeg", quality);
+        } catch(e){ URL.revokeObjectURL(url); resolve(blob); }
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); resolve(blob); };
+      img.src = url;
+    });
+  },
+  pushFiles: function(code){
+    if (!FS.ok) return Promise.resolve();
+    var pushed = DB.settings().sync_pushed_files || {};
+    var refs = Sync._allFileRefs();
+    var ids = Object.keys(refs).filter(function(id){ return !pushed[id]; });
+    if (!ids.length) return Promise.resolve();
+    return Sync._roomId(code).then(function(roomId){
+      var out = Object.assign({}, pushed);
+      var chain = Promise.resolve();
+      ids.forEach(function(fid){
+        chain = chain.then(function(){
+          return FS.get(fid).then(function(blob){
+            if (!blob){ out[fid] = true; return; }   // 実体が無い（この端末では未取得のファイル等）
+            var work = Promise.resolve(blob);
+            if (blob.type && blob.type.indexOf("image/") === 0 && blob.size > Sync._FILE_SIZE_LIMIT){
+              work = Sync._compressImage(blob, 1600, 0.75);
+            }
+            return work.then(function(outBlob){
+              if (outBlob.size > Sync._FILE_SIZE_LIMIT){ out[fid] = "skip"; return; }
+              return outBlob.arrayBuffer().then(function(buf){
+                return Sync._encryptBytes(code, buf).then(function(enc){
+                  var body = { fields: {
+                    iv: { stringValue: enc.iv },
+                    data: { stringValue: enc.data },
+                    mime: { stringValue: outBlob.type || blob.type || "" },
+                    updated_at: { integerValue: String(Date.now()) }
+                  } };
+                  return fetch(Sync._fileDocUrl(roomId, fid), {
+                    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+                  }).then(function(res){ if (res.ok) out[fid] = true; });
+                });
+              });
+            });
+          }).catch(function(){});   // 1件の失敗で全体を止めない
+        });
+      });
+      return chain.then(function(){ DB.saveSettings({ sync_pushed_files: out }); });
+    });
+  },
+  pullFiles: function(code){
+    if (!FS.ok) return Promise.resolve();
+    var refs = Sync._allFileRefs();
+    var ids = Object.keys(refs);
+    if (!ids.length) return Promise.resolve();
+    return Sync._roomId(code).then(function(roomId){
+      var chain = Promise.resolve();
+      ids.forEach(function(fid){
+        chain = chain.then(function(){
+          return FS.get(fid).then(function(existing){
+            if (existing) return;   // この端末に既にある
+            return fetch(Sync._fileDocUrl(roomId, fid)).then(function(res){
+              if (!res.ok) return;
+              return res.json().then(function(doc){
+                var f = doc.fields || {};
+                if (!f.iv || !f.data) return;
+                return Sync._decryptBytes(code, f.iv.stringValue, f.data.stringValue).then(function(bytes){
+                  var mime = (f.mime && f.mime.stringValue) || "";
+                  return FS.put(fid, new Blob([bytes], { type: mime }));
+                });
+              });
+            }).catch(function(){});
+          });
+        });
+      });
+      return chain;
     });
   },
 
@@ -5797,7 +5921,7 @@ function syncCardHTML(s){
     '</div>';
   }
   return '<div class="card"><div class="section-label">他の端末と同期</div>'+
-    '<p class="muted" style="font-size:11.5px;margin:0 0 6px">決めた2台の端末で、案件・連絡ログなどを同じ内容にそろえられます（添付ファイルは対象外・端末ごとです）。他の人が使っている解体サーチとは混ざりません。</p>'+
+    '<p class="muted" style="font-size:11.5px;margin:0 0 6px">決めた2台の端末で、案件・連絡ログ・添付の写真や書類まで同じ内容にそろえられます（サイズが大きい書類など一部は対象外になる場合があります）。他の人が使っている解体サーチとは混ざりません。</p>'+
     '<div class="row">'+
       '<button class="btn btn--soft btn--sm" data-act="sync-new">合言葉を作って始める</button>'+
       '<button class="btn btn--ghost btn--sm" data-act="sync-join">合言葉を入力する</button>'+
