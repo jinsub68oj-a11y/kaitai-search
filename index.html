@@ -175,6 +175,7 @@ h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:0}
   -webkit-tap-highlight-color:transparent;
   transition:filter .12s ease, background .12s ease, box-shadow .12s ease, transform .06s ease;
 }
+.btn[hidden]{display:none}   /* r126: displayを固定指定しているクラスはhidden属性を上書きしてしまうため明示（r125の.lostlistと同種の不具合の横展開チェックで発見） */
 .btn:hover{filter:brightness(.97)}
 .btn:active{filter:brightness(.92);transform:translateY(1px)}
 .btn:focus-visible{outline:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--primary) 30%,transparent)}
@@ -449,6 +450,7 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 .lost-toggle .chev{width:15px;height:15px;transition:transform var(--dur-2) var(--ease);transform:rotate(180deg)}
 .lost-toggle.is-open .chev{transform:rotate(0deg)}
 .lostlist{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.lostlist[hidden]{display:none}   /* r125: .lostlist{display:flex}がhidden属性のdisplay:noneを常に上書きしてしまい、閉じても表示され続けていた不具合の修正 */
 .lostlist:not([hidden]){animation:discReveal var(--dur-3) var(--ease)}   /* r121: 開いた時にスライド表示（.disclosureと同じ演出） */
 .lostrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;font-size:12.5px}
 .lostrow:hover{background:var(--surface-3)}
@@ -478,19 +480,18 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 .barlist__val{font-weight:800;font-variant-numeric:tabular-nums;min-width:48px;text-align:right}
 
 /* Priority list */
-.prio{display:flex;flex-direction:column;gap:6px}
+.prio{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px}
 .prio__grp{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
 .prio__item{
-  display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--border);
-  border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;
+  display:flex;flex-direction:column;gap:3px;padding:8px 9px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;min-width:0;
 }
 .prio__item:hover{background:var(--surface-3)}
-.prio__body{min-width:0;flex:1}
-.prio__co{font-weight:800;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.prio__sub{font-size:12px;color:var(--muted);font-weight:600;margin-top:2px}
+.prio__co{font-weight:800;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prio__sub{font-size:11px;color:var(--muted);font-weight:600;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
 .prio__fu{font-weight:700}
-.prio__amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:13px;text-align:right;flex:0 0 auto}
-.prio__amtlab{display:block;font-size:9.5px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:1px}
+.prio__amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:12.5px;margin-top:1px}
+.prio__amtlab{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.04em;margin-right:3px}
 
 /* Follow-up columns */
 .fu-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -814,9 +815,22 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-11 r122";
+var APP_BUILD = "2026-09-12 r126";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-12 r126": [
+    "全機能を見直し、不具合を2件修正しました。①案件詳細で「編集」を押した後もボタンが消えずに残っていた不具合、②追客管理の「対応した」ダイアログで選択肢が古い表記のままだった不具合"
+  ],
+  "2026-09-12 r125": [
+    "成約・失注・保留中の折りたたみが、閉じても表示され続けていた不具合の本当の原因（CSSの指定漏れ）を修正しました。今度こそ、押すたびにきちんと開閉します"
+  ],
+  "2026-09-11 r124": [
+    "成約・失注・保留中の折りたたみが、押しても閉じないことがある不具合を修正しました",
+    "他の端末と同期で、スマホ側の変更がパソコンに反映されないことがある不具合を修正。端末どうしの時計が多少ズレていても、変更した方に正しくそろうようになりました"
+  ],
+  "2026-09-11 r123": [
+    "ダッシュボードの「優先して対応する案件」を横並び（複数列）にして、よりコンパクトにしました。表示内容はそのままです"
+  ],
   "2026-09-11 r122": [
     "開閉の矢印の向きを直しました。閉じている時は上向き、開いて表示されている時は下向きに（成約/失注/保留中の案件、進捗の履歴などすべて）"
   ],
@@ -1459,7 +1473,8 @@ var DB = {
       own_company:"", demo_reg_expiry:"", const_license_expiry:"",   // r117で廃止・未使用（旧データ温存）
       cash_on_hand:null, cash_on_hand_on:"",
       last_prices:[],   // r64: 新規案件に引き継ぐ「前回使った単価」
-      sync_code:"", sync_last_at:0 }, read(K.settings, {}));   // r116: 他端末同期の合言葉・最終同期時刻
+      sync_code:"", sync_last_at:0,
+      sync_synced_mtime:0, sync_synced_remote_at:0 }, read(K.settings, {}));   // r116: 他端末同期の合言葉・最終同期時刻／r124: 前回同期時点の記録（端末の時計のズレに左右されない判定用）
   },
   saveSettings: function(patch){
     var s = Object.assign(DB.settings(), patch); write(K.settings, s); return s;
@@ -2025,7 +2040,8 @@ var Sync = {
           body: JSON.stringify(body)
         }).then(function(res){
           if (!res.ok) throw new Error("firestore-put-" + res.status);
-          DB.saveSettings({ sync_code: code, sync_last_at: Date.now() });
+          // r124: 「前回同期した時点」を記録（端末どうしの時計のズレに左右されない判定のため）
+          DB.saveSettings({ sync_code: code, sync_last_at: Date.now(), sync_synced_mtime: updatedAt, sync_synced_remote_at: updatedAt });
         });
       });
     });
@@ -2035,10 +2051,35 @@ var Sync = {
   pullRemote: function(code, room){
     var apply = function(r){
       DB.applySyncBundle(r.bundle);
-      DB.saveSettings({ sync_code: code, sync_last_at: Date.now() });
+      DB.saveSettings({ sync_code: code, sync_last_at: Date.now(), sync_synced_mtime: DB.contentModifiedAt(), sync_synced_remote_at: r.updatedAt });
     };
     if (room) { apply(room); return Promise.resolve(); }
     return Sync.fetchRoom(code).then(function(r){ if (r) apply(r); });
+  },
+
+  // r124: push/pull どちらが必要か判定して実行。端末どうしの時計を比較するのではなく、
+  // 「前回自分が同期した時点から、こちら側／向こう側それぞれが変わったか」で判定するので、
+  // 2台の時計が多少ズレていても正しく動く（実際にズレていたことが原因で片方向にしか同期しない不具合が起きていた）。
+  runOnce: function(code){
+    var s = DB.settings();
+    return Sync.fetchRoom(code).then(function(room){
+      if (!room) return Sync.pushLocal(code).then(function(){ return "pushed"; });
+      var local = DB.contentModifiedAt();
+      var localChanged = local > (s.sync_synced_mtime || 0);
+      var remoteChanged = room.updatedAt !== (s.sync_synced_remote_at || 0);
+      if (!localChanged && !remoteChanged){
+        DB.saveSettings({ sync_last_at: Date.now() });
+        return "noop";
+      }
+      // 両方が同時に変わっている（本当の衝突）時だけ、やむを得ず時計の値で決める
+      var pull = remoteChanged && (!localChanged || room.updatedAt > local);
+      if (pull){
+        DB.applySyncBundle(room.bundle);
+        DB.saveSettings({ sync_last_at: Date.now(), sync_synced_mtime: DB.contentModifiedAt(), sync_synced_remote_at: room.updatedAt });
+        return "pulled";
+      }
+      return Sync.pushLocal(code).then(function(){ return "pushed"; });
+    });
   },
 
   // アプリを開くたびに自動で呼ぶ。合言葉が設定されている時だけ動く。失敗は無視（オフラインでも普通に使える）
@@ -2046,18 +2087,8 @@ var Sync = {
     if (!Sync.configured()) return;
     var code = DB.settings().sync_code;
     if (!code) return;
-    Sync.fetchRoom(code).then(function(room){
-      if (!room){ return Sync.pushLocal(code); }
-      var local = DB.contentModifiedAt();
-      if (room.updatedAt > local){
-        DB.applySyncBundle(room.bundle);
-        DB.saveSettings({ sync_last_at: Date.now() });
-        render();
-      } else if (local > room.updatedAt){
-        return Sync.pushLocal(code);
-      } else {
-        DB.saveSettings({ sync_last_at: Date.now() });
-      }
+    Sync.runOnce(code).then(function(result){
+      if (result === "pulled") render();
     }).catch(function(e){ logError("sync-auto", (e && e.message) || String(e)); });
   }
 };
@@ -2888,10 +2919,8 @@ function ViewDashboard(){
     if (d.awaiting_reply) fu = ' <span class="prio__fu" style="color:var(--muted)">折り返し待ち</span>';
     else if (showFu && d.next_follow_on) fu = ' <span class="prio__fu">追客 '+fmtDate(d.next_follow_on)+'</span>';
     return '<div class="prio__item" data-goto="'+d.id+'">'+
-      '<div class="prio__body">'+
-        '<div class="prio__co">'+esc(d.company_name||"（無名）")+'</div>'+
-        '<div class="prio__sub">'+statusBadge(d.status)+' '+probBadge(d.probability)+fu+'</div>'+
-      '</div>'+
+      '<div class="prio__co">'+esc(d.company_name||"（無名）")+'</div>'+
+      '<div class="prio__sub">'+statusBadge(d.status)+' '+probBadge(d.probability)+fu+'</div>'+
       '<div class="prio__amt" title="'+yen(pr.profit)+'"><span class="prio__amtlab">見込</span>'+yenMan(pr.profit)+'</div>'+
     '</div>';
   }
@@ -3164,30 +3193,13 @@ function ViewDeals(){
       if (fsort) fsort.addEventListener("change", function(){ dealSort = fsort.value; render(); });
       var fFav = root.querySelector("#fFav");
       if (fFav) fFav.onclick = function(){ dealFilters.favOnly = !dealFilters.favOnly; render(); };
+      // r124: 直接DOM操作をやめ、必ずrender()で描き直す（他の要因での再描画と状態がズレるのを防ぐ）
       var lostTog = root.querySelector("#lostToggle");
-      if (lostTog) lostTog.onclick = function(){
-        dealsShowLost = !dealsShowLost;
-        var ll = root.querySelector("#lostList");
-        if (ll) ll.hidden = !dealsShowLost;
-        lostTog.classList.toggle("is-open", dealsShowLost);
-        lostTog.setAttribute("aria-expanded", dealsShowLost ? "true" : "false");
-      };
+      if (lostTog) lostTog.onclick = function(){ dealsShowLost = !dealsShowLost; render(); };
       var wonTog = root.querySelector("#wonToggle");
-      if (wonTog) wonTog.onclick = function(){
-        dealsShowWon = !dealsShowWon;
-        var wl = root.querySelector("#wonList");
-        if (wl) wl.hidden = !dealsShowWon;
-        wonTog.classList.toggle("is-open", dealsShowWon);
-        wonTog.setAttribute("aria-expanded", dealsShowWon ? "true" : "false");
-      };
+      if (wonTog) wonTog.onclick = function(){ dealsShowWon = !dealsShowWon; render(); };
       var holdTog = root.querySelector("#holdToggle");
-      if (holdTog) holdTog.onclick = function(){
-        dealsShowHold = !dealsShowHold;
-        var hl = root.querySelector("#holdList");
-        if (hl) hl.hidden = !dealsShowHold;
-        holdTog.classList.toggle("is-open", dealsShowHold);
-        holdTog.setAttribute("aria-expanded", dealsShowHold ? "true" : "false");
-      };
+      if (holdTog) holdTog.onclick = function(){ dealsShowHold = !dealsShowHold; render(); };
       var fc = root.querySelector("#fclear");
       if (fc) fc.onclick = function(){ dealFilters = { q:"", status:"", prob:"", source:"", from:"", to:"", favOnly:false }; render(); };
     }
@@ -4922,7 +4934,12 @@ function openFollowDoneDialog(did){
     title:"対応を記録して次回を設定", confirmLabel:"保存",
     body:'<div class="stack">'+
       '<div class="form-grid">'+
-        fieldSelect("今回の連絡","donekind",[{k:"call",label:"架電した"},{k:"noreach",label:"不在だった"},{k:"mail",label:"メール送信"},{k:"visit",label:"訪問した"},{k:"none",label:"記録しない"}],"call",{blank:false})+
+        '<label class="field"><span class="field__label">今回の連絡</span><select class="select" data-field="donekind">'+
+          LOG_KINDS.filter(function(o){ return o.k !== "note"; }).map(function(o){
+            return '<option value="'+o.k+'"'+(o.k==="call"?" selected":"")+'>'+esc(o.label)+'</option>';
+          }).join("")+
+          '<option value="none">記録しない</option>'+
+        '</select></label>'+
         fieldSelectWithOther("次回アクション","na",NEXT_ACTIONS,"電話","na_other","",{blank:false,otherPlaceholder:"具体的なアクションを入力（必須）"})+
       '</div>'+
       dateField("次回追客日","nf",isoDate(d3))+
@@ -6107,13 +6124,7 @@ function ViewSettings(){
       if (syncNowBtn) syncNowBtn.onclick = function(){
         syncNowBtn.disabled = true;
         var code = DB.settings().sync_code;
-        Sync.fetchRoom(code).then(function(room){
-          if (!room) return Sync.pushLocal(code);
-          var local = DB.contentModifiedAt();
-          if (room.updatedAt > local) { DB.applySyncBundle(room.bundle); DB.saveSettings({ sync_last_at:Date.now() }); }
-          else if (local > room.updatedAt) return Sync.pushLocal(code);
-          else DB.saveSettings({ sync_last_at:Date.now() });
-        }).then(function(){ toast("同期しました"); render(); })
+        Sync.runOnce(code).then(function(){ toast("同期しました"); render(); })
           .catch(function(){ toast("通信できませんでした。ネット接続を確認してください"); syncNowBtn.disabled = false; });
       };
       var syncOffBtn = root.querySelector('[data-act="sync-off"]');
