@@ -325,7 +325,7 @@ h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:0}
 .pr-low{--c:#7d8896}
 
 /* Forms */
-.field{display:flex;flex-direction:column;gap:6px}
+.field{display:flex;flex-direction:column;gap:5px}
 .field__label{font-size:12.5px;font-weight:700;color:var(--text-2)}
 .field__label .req{color:var(--danger);margin-left:3px}
 .field__hint{font-size:11.5px;color:var(--muted)}
@@ -390,7 +390,7 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 .disclosure__btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 15px;background:var(--surface-2);border:none;color:var(--text);font-weight:700;font-size:14px;cursor:pointer;text-align:left}
 .disclosure__btn .chev{width:18px;height:18px;flex:0 0 18px;opacity:.55;transition:transform .15s ease;transform:rotate(180deg)}
 .disclosure.is-open .disclosure__btn .chev{transform:rotate(0deg)}
-.disclosure__body{padding:13px;border-top:1px solid var(--border);display:none}
+.disclosure__body{padding:10px;border-top:1px solid var(--border);display:none}
 .disclosure.is-open .disclosure__body{display:block}
 .disclosure__btn>span{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;line-height:1.4}
 .disclosure__btn>span .muted{font-size:12.5px}
@@ -406,13 +406,13 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 
 /* Table */
 .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
-.table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:720px}
+.table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px}
 .table th{
-  text-align:left;padding:11px 14px;font-size:11.5px;font-weight:800;letter-spacing:.04em;
+  text-align:left;padding:8px 12px;font-size:11px;font-weight:800;letter-spacing:.04em;
   color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);
   background:var(--surface-2);position:sticky;top:0;
 }
-.table td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
 .table tr:last-child td{border-bottom:none}
 .table tr.clickable{cursor:pointer}
 .table tr.clickable:hover td{background:var(--surface-3)}
@@ -420,16 +420,16 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 .table tfoot td{font-weight:800;background:var(--surface-2);border-top:2px solid var(--border-strong)}
 
 /* Deal cards (mobile list) */
-.deal-cards{display:flex;flex-direction:column;gap:6px}
+.deal-cards{display:flex;flex-direction:column;gap:5px}
 .deal-card{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
-  padding:8px 11px;box-shadow:var(--shadow-sm);cursor:pointer;display:flex;flex-direction:column;gap:5px;
+  padding:7px 10px;box-shadow:var(--shadow-sm);cursor:pointer;display:flex;flex-direction:column;gap:4px;
 }
 .deal-card:active{filter:brightness(.97)}
 .deal-card__top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-.deal-card__co{font-weight:800;font-size:13.5px;line-height:1.25}
-.deal-card__meta{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px}
-.deal-card__row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.deal-card__co{font-weight:800;font-size:13px;line-height:1.25}
+.deal-card__meta{font-size:10.5px;color:var(--muted);font-weight:600;margin-top:1px}
+.deal-card__row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px}
 .deal-card__amt{font-weight:800;font-variant-numeric:tabular-nums}
 .deal-card .chipbtn{min-height:24px !important;font-size:11px !important;padding:0 8px !important;margin-top:0 !important;gap:4px}
 .deal-card .chipbtn svg{width:13px;height:13px}
@@ -445,31 +445,31 @@ textarea.input{min-height:74px;resize:vertical;line-height:1.5}
 tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warning)}
 
 /* 失注した案件（一覧下部・折りたたみ／r107） */
-.lost-toggle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:16px;padding:9px;background:none;border:1px dashed var(--border-strong);border-radius:var(--radius-sm);color:var(--muted);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer}
+.lost-toggle{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:10px;padding:8px;background:none;border:1px dashed var(--border-strong);border-radius:var(--radius-sm);color:var(--muted);font-size:12.5px;font-weight:700;font-family:inherit;cursor:pointer}
 .lost-toggle:hover{background:var(--surface-2);color:var(--text-2)}
 .lost-toggle .chev{width:15px;height:15px;transition:transform var(--dur-2) var(--ease);transform:rotate(180deg)}
 .lost-toggle.is-open .chev{transform:rotate(0deg)}
-.lostlist{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.lostlist{display:flex;flex-direction:column;gap:4px;margin-top:6px}
 .lostlist[hidden]{display:none}   /* r125: .lostlist{display:flex}がhidden属性のdisplay:noneを常に上書きしてしまい、閉じても表示され続けていた不具合の修正 */
 .lostlist:not([hidden]){animation:discReveal var(--dur-3) var(--ease)}   /* r121: 開いた時にスライド表示（.disclosureと同じ演出） */
-.lostrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;font-size:12.5px}
+.lostrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;font-size:12px}
 .lostrow:hover{background:var(--surface-3)}
 .lostrow__co{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lostrow__meta{color:var(--muted);font-weight:600;white-space:nowrap;flex:0 0 auto}
 
 /* Funnel */
-.funnel{display:flex;flex-direction:column;gap:2px}
-.funnel__stage{padding:2px 0}
+.funnel{display:flex;flex-direction:column;gap:0}
+.funnel__stage{padding:1px 0}
 .funnel__track{flex:1 1 auto;min-width:0}
 .funnel__bar{
-  height:40px;border-radius:9px;display:flex;align-items:center;padding:0 12px;gap:10px;
+  height:22px;border-radius:6px;display:flex;align-items:center;padding:0 8px;gap:8px;
   background:linear-gradient(90deg,color-mix(in srgb,var(--primary) 88%,#000 0%),color-mix(in srgb,var(--primary) 55%,transparent));
-  color:#fff;font-weight:800;min-width:44px;transition:width .3s ease;box-sizing:border-box;
+  color:#fff;font-weight:800;font-size:12px;min-width:30px;transition:width .3s ease;box-sizing:border-box;
 }
-.funnel__name{font-size:12.5px;font-weight:800;color:var(--text-2);width:92px;flex:0 0 auto}
-.funnel__row{display:flex;align-items:center;gap:12px}
+.funnel__name{font-size:11px;font-weight:800;color:var(--text-2);width:66px;flex:0 0 auto}
+.funnel__row{display:flex;align-items:center;gap:6px}
 .funnel__count{font-variant-numeric:tabular-nums}
-.funnel__conv{font-size:11.5px;color:var(--muted);font-weight:700;padding-left:104px}
+.funnel__conv{font-size:9.5px;color:var(--muted);font-weight:700;padding:1px 0 1px 72px}
 .funnel__conv b{color:var(--text-2)}
 
 /* Bars (analytics) */
@@ -480,17 +480,18 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 .barlist__val{font-weight:800;font-variant-numeric:tabular-nums;min-width:48px;text-align:right}
 
 /* Priority list */
-.prio{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px}
-.prio__grp{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--muted);margin-bottom:6px}
+.prio{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:4px}
+.prio__grp{font-size:10.5px;font-weight:800;letter-spacing:.04em;color:var(--muted);margin-bottom:5px}
 .prio__item{
-  display:flex;flex-direction:column;gap:3px;padding:8px 9px;border:1px solid var(--border);
+  display:flex;flex-direction:column;gap:2px;padding:6px 8px;border:1px solid var(--border);
   border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;min-width:0;
 }
 .prio__item:hover{background:var(--surface-3)}
-.prio__co{font-weight:800;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.prio__sub{font-size:11px;color:var(--muted);font-weight:600;display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.prio__co{font-weight:800;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prio__sub{font-size:10px;color:var(--muted);font-weight:600;display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.prio__sub .badge{font-size:10px;padding:1px 7px;gap:3px}
 .prio__fu{font-weight:700}
-.prio__amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:12.5px;margin-top:1px}
+.prio__amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:12px;margin-top:0}
 .prio__amtlab{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.04em;margin-right:3px}
 
 /* Follow-up columns */
@@ -633,7 +634,7 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 .firstrun p{font-size:13px;color:var(--muted);line-height:1.6;margin:0 0 18px}
 .firstrun .btn{width:100%}
 
-.filterbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.filterbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 .filterbar .input,.filterbar .select{min-height:40px;font-size:13px}
 .search{position:relative;flex:1;min-width:180px}
 .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted)}
@@ -665,7 +666,7 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 .pill-toggle button{border:none;background:transparent;padding:7px 13px;border-radius:999px;font-weight:700;font-size:12.5px;color:var(--muted);cursor:pointer}
 .pill-toggle button.is-on{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm)}
 
-.divider{height:1px;background:var(--border);margin:16px 0}
+.divider{height:1px;background:var(--border);margin:10px 0}
 
 /* r118/r119: 設定ページだけコンパクトに（.stack/.card等は他画面と共用のためスコープして上書き） */
 .settings-stack{gap:8px}
@@ -815,9 +816,26 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-27 r134";
+var APP_BUILD = "2026-09-27 r139";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-27 r139": [
+    "外注費を入れていない案件は、「金額管理」の外注に出す場合の見込利益を表示しないようにしました（外注費が空のままだと数字が実態と合わないため）。外注費を入れると自動で表示されます"
+  ],
+  "2026-09-27 r138": [
+    "「新規案件登録」画面もコンパクトにしました（カードの余白・項目間の間隔を詰めています。入力欄自体の大きさはタップしやすいようそのままです）",
+    "さらに全体の余白を詰めました"
+  ],
+  "2026-09-27 r137": [
+    "「案件一覧」もコンパクトにしました。表の行の余白、検索欄の下の余白、成約・失注・保留などの折りたたみボタンの間隔を詰めています（案件カードの詰まりは利益管理・営業分析とも共通なので、そちらも一緒に少しコンパクトになっています）"
+  ],
+  "2026-09-27 r136": [
+    "「営業分析」画面をコンパクトにしました。上の数字を短い表記に、スマホでは横スクロールが必要だった表をカード表示に、「商談の流れ」の棒も小さくしました。カード同士の余白も詰めています"
+  ],
+  "2026-09-27 r135": [
+    "「見積提出」の案件を、ホームの「優先して対応する案件」に出さないようにしました（成約待ちなので、催促で急かす必要はないという考え方です）。追客管理・案件一覧の「成約待ちの案件」では引き続き確認できます",
+    "ホームの「優先して対応する案件」のカードをコンパクトにしました"
+  ],
   "2026-09-27 r134": [
     "「利益管理」画面をコンパクトにしました。上の4つの数字を「¥500万」のような短い表記に、案件カードも2行にまとめて見やすくしました",
     "月別 確定利益の推移グラフの金額が画面端で見切れていた不具合を修正しました（同じく短い表記に変更）"
@@ -2491,9 +2509,10 @@ var Calc = {
 
   priorityScore: function(deal){
     if (!Calc.isActive(deal) || deal.on_hold) return -99;   // 保留中は優先度の対象外（r115）
+    if (deal.status === "quote_submitted") return -99;      // 見積提出済み＝成約待ちは優先対応リストの対象外（r134）
     var s = 0;
     s += ({ A:3, B:1, C:-1, D:-2 })[deal.probability] || 0;
-    if (deal.status === "quote_submitted" || deal.status === "considering") s += 2;
+    if (deal.status === "considering") s += 2;
     if (deal.status === "quote_requested") s += 1;
     if (deal.next_follow_on && !deal.awaiting_reply && !deal.no_followup){   // 折り返し待ち・追客なしは期限で急かさない
       if (deal.next_follow_on < isoToday()) s += 3;
@@ -2512,7 +2531,7 @@ var Calc = {
   },
 
   topPriority: function(n){
-    return DB.deals().filter(function(d){ return Calc.isActive(d) && !d.on_hold; })
+    return DB.deals().filter(function(d){ return Calc.isActive(d) && !d.on_hold && d.status !== "quote_submitted"; })
       .map(function(d){ return { d:d, s:Calc.priorityScore(d) }; })
       .sort(function(a,b){
         if (b.s !== a.s) return b.s - a.s;
@@ -4596,9 +4615,9 @@ function wirePreEstimateForm(root){
 function ViewDealNew(){
   var html =
     '<div class="page-head only-desktop"><div><h1>新規案件登録</h1><p>まずは最小限の項目だけ。あとから変更できます。</p></div></div>'+
-    '<form id="newForm" class="stack" style="max-width:760px" novalidate>'+
-      '<div class="card"><div class="section-label">基本情報</div>'+
-        '<div class="form-grid-2">'+
+    '<form id="newForm" class="stack" style="max-width:760px;gap:9px" novalidate>'+
+      '<div class="card" style="padding:11px"><div class="section-label" style="margin-bottom:6px">基本情報</div>'+
+        '<div class="form-grid-2" style="gap:9px">'+
           fieldInput("会社名","company_name","",{required:true,placeholder:"例：山田不動産"})+
           fieldInput("担当者名","contact_name","",{placeholder:"例：山田 太郎"})+
           fieldInput("電話番号","phone","",{type:"tel",inputmode:"tel",placeholder:"090-1234-5678"})+
@@ -4630,8 +4649,8 @@ function ViewDealNew(){
         '</div>'+
       '</div>'+
 
-      '<div class="card"><div class="section-label">金額管理</div>'+
-        '<div class="form-grid-2">'+
+      '<div class="card" style="padding:11px"><div class="section-label" style="margin-bottom:6px">金額管理</div>'+
+        '<div class="form-grid-2" style="gap:9px">'+
           moneyField("提示金額","amount_presented","",{hint:false})+
           moneyField("施工原価（自社でやる時）","cost_construction","",{hint:false})+
           moneyField("外注費（協力会社に払う額）","cost_outsource","",{hint:false})+
@@ -4639,13 +4658,13 @@ function ViewDealNew(){
         '</div>'+
         '<div class="field__hint" style="margin-top:2px">分かる範囲でOK（「680万」「1.2億」でも入力できます）。</div>'+
         '<div class="divider"></div>'+
-        '<div class="profit2">'+
+        '<div class="profit2" id="profit2Wrap" style="grid-template-columns:1fr">'+
           '<div class="profit2__box">'+
             '<div class="profit2__head">自社で受ける</div>'+
             '<div class="profit2__row"><span class="profit2__k">見込利益</span><span class="profit2__v" id="mpProfit">—</span></div>'+
             '<div class="profit2__row"><span class="profit2__k">利益率</span><span class="profit2__v" id="mpRate">—</span></div>'+
           '</div>'+
-          '<div class="profit2__box">'+
+          '<div class="profit2__box" id="profit2OutBox" hidden>'+
             '<div class="profit2__head">外注に出す</div>'+
             '<div class="profit2__row"><span class="profit2__k">見込利益</span><span class="profit2__v" id="mpProfitOut">—</span></div>'+
             '<div class="profit2__row"><span class="profit2__k">利益率</span><span class="profit2__v" id="mpRateOut">—</span></div>'+
@@ -4766,6 +4785,10 @@ function ViewDealNew(){
           }
           set("#mpProfit", "#mpRate", Calc.profit(base));
           set("#mpProfitOut", "#mpRateOut", Calc.profitOutsource(base));
+          var hasOut = base.cost_outsource !== null;
+          var outBox = root.querySelector("#profit2OutBox"), wrap = root.querySelector("#profit2Wrap");
+          if (outBox) outBox.hidden = !hasOut;
+          if (wrap) wrap.style.gridTemplateColumns = hasOut ? "1fr 1fr" : "1fr";
         }
         ["amount_presented","cost_construction","cost_other","cost_outsource"].forEach(function(n){
           var el = root.querySelector('[data-field="'+n+'"]');
@@ -4920,13 +4943,13 @@ function ViewDealDetail(id){
       moneyField("その他原価","cost_other",deal.cost_other,{hint:"諸経費・処分費など。自社・外注どちらの利益からも差引き"})+
     '</div>'+
     '<div class="divider"></div>'+
-    '<div class="profit2">'+
+    '<div class="profit2" id="profit2Wrap" style="grid-template-columns:'+(num(deal.cost_outsource)!==null?"1fr 1fr":"1fr")+'">'+
       '<div class="profit2__box">'+
         '<div class="profit2__head">自社で受ける</div>'+
         '<div class="profit2__row"><span class="profit2__k">見込利益</span><span class="profit2__v" id="mpProfit" style="color:'+(pr.profit!==null&&pr.profit<0?"var(--danger)":"var(--success)")+'">'+yen(pr.profit)+'</span></div>'+
         '<div class="profit2__row"><span class="profit2__k">利益率</span><span class="profit2__v" id="mpRate">'+pct(pr.rate,1)+'</span></div>'+
       '</div>'+
-      '<div class="profit2__box">'+
+      '<div class="profit2__box" id="profit2OutBox"'+(num(deal.cost_outsource)===null?' hidden':'')+'>'+
         '<div class="profit2__head">外注に出す</div>'+
         '<div class="profit2__row"><span class="profit2__k">見込利益</span><span class="profit2__v" id="mpProfitOut" style="color:'+(prO.profit!==null&&prO.profit<0?"var(--danger)":"var(--success)")+'">'+yen(prO.profit)+'</span></div>'+
         '<div class="profit2__row"><span class="profit2__k">利益率</span><span class="profit2__v" id="mpRateOut">'+pct(prO.rate,1)+'</span></div>'+
@@ -4974,6 +4997,10 @@ function ViewDealDetail(id){
         paintVal(root.querySelector("#mpProfitOut"), yen(pO2.profit), pO2.profit!==null&&pO2.profit<0);
         paintVal(root.querySelector("#mpRateOut"), pct(pO2.rate,1));
         paintVal(root.querySelector("#mpSummary"), "見込利益 "+yen(p2.profit), p2.profit!==null&&p2.profit<0);
+        var hasOut2 = num(d2.cost_outsource) !== null;
+        var outBox2 = root.querySelector("#profit2OutBox"), wrap2 = root.querySelector("#profit2Wrap");
+        if (outBox2) outBox2.hidden = !hasOut2;
+        if (wrap2) wrap2.style.gridTemplateColumns = hasOut2 ? "1fr 1fr" : "1fr";
         toast("保存しました");
       }
       autoFields.forEach(function(el){ el.addEventListener("change", function(){ saveField(el); }); });
@@ -5710,11 +5737,11 @@ function ViewAnalytics(){
   var avgDays = Calc.avgWinDays();
 
   function barTable(title, g, opts){
-    var keys = Object.keys(g);
+    var keys = Object.keys(g).sort(function(a,b){ return g[b].total - g[a].total; });
     var showDays = !!opts.days;
-    var html = '<div class="card"><div class="section-label">'+esc(title)+'</div>';
-    html += '<div class="table-wrap"><table class="table" style="min-width:auto"><thead><tr><th>'+esc(opts.head)+'</th><th class="num">案件</th><th class="num">成約</th><th class="num">成約率</th><th class="num">確定利益</th>'+(showDays?'<th class="num">平均日数</th>':'')+'</tr></thead><tbody>';
-    keys.sort(function(a,b){ return g[b].total - g[a].total; }).forEach(function(k){
+    var html = '<div class="card" style="margin-bottom:10px;padding:14px"><div class="section-label" style="margin-bottom:7px">'+esc(title)+'</div>';
+    html += '<div class="table-wrap only-desktop"><table class="table" style="min-width:auto"><thead><tr><th>'+esc(opts.head)+'</th><th class="num">案件</th><th class="num">成約</th><th class="num">成約率</th><th class="num">確定利益</th>'+(showDays?'<th class="num">平均日数</th>':'')+'</tr></thead><tbody>';
+    keys.forEach(function(k){
       var x = g[k];
       var decided = x.won + x.lost;
       var rate = decided ? x.won/decided*100 : null;
@@ -5725,18 +5752,31 @@ function ViewAnalytics(){
         '<td class="num" title="'+yen(x.profit)+'">'+yenMan(x.profit)+'</td>'+
         (showDays?'<td class="num">'+(x.dayN?Math.round(x.daySum/x.dayN)+'日':'—')+'</td>':'')+'</tr>';
     });
-    html += '</tbody></table></div></div>';
+    html += '</tbody></table></div>';
+    html += '<div class="deal-cards only-mobile">';
+    keys.forEach(function(k){
+      var x = g[k];
+      var decided = x.won + x.lost;
+      var rate = decided ? x.won/decided*100 : null;
+      var rc = rate===null ? "var(--muted)" : rate>=50 ? "var(--success)" : rate>=25 ? "var(--warning)" : "var(--danger)";
+      html += '<div class="deal-card">'+
+        '<div class="deal-card__top"><div class="deal-card__co">'+esc(k)+'</div><span style="font-weight:800;font-size:12px;color:'+rc+'">'+pct(rate)+'</span></div>'+
+        '<div class="deal-card__row"><span class="muted">'+x.total+'件中'+x.won+'件成約'+(showDays&&x.dayN?' ・ 平均'+Math.round(x.daySum/x.dayN)+'日':'')+'</span>'+
+          '<span class="deal-card__amt" title="'+esc(yen(x.profit))+'">'+esc(yenMan(x.profit))+'</span></div>'+
+      '</div>';
+    });
+    html += '</div></div>';
     return html;
   }
 
   var html =
     '<div class="page-head only-desktop"><div><h1>営業分析</h1><p>どの経路が効率よく成果につながっているか。</p></div></div>'+
-    '<div class="stats" style="margin-bottom:16px">'+
-      '<div class="stat stat--good"><div class="stat__label">平均案件利益（成約）</div><div class="stat__value tnum" title="'+yen(avgProfit)+'">'+yenMan(avgProfit)+'</div></div>'+
-      '<div class="stat"><div class="stat__label">平均受注期間</div><div class="stat__value tnum">'+(avgDays===null?"—":avgDays)+'<small> 日</small></div></div>'+
-      '<div class="stat"><div class="stat__label">成約 / 総案件</div><div class="stat__value tnum">'+wonDeals.length+' <small>/ '+deals.length+'</small></div></div>'+
+    '<div class="stats stats--compact" style="margin-bottom:10px">'+
+      '<div class="stat stat--sm stat--good" title="'+esc(yen(avgProfit))+'"><div class="stat__label">平均案件利益</div><div class="stat__value tnum">'+esc(yenMan(avgProfit))+'</div></div>'+
+      '<div class="stat stat--sm"><div class="stat__label">平均受注期間</div><div class="stat__value tnum">'+(avgDays===null?"—":avgDays)+'<small> 日</small></div></div>'+
+      '<div class="stat stat--sm"><div class="stat__label">成約/総案件</div><div class="stat__value tnum">'+wonDeals.length+'<small>/'+deals.length+'</small></div></div>'+
     '</div>'+
-    '<div class="card"><div class="section-label">商談の流れ（全期間）</div>'+
+    '<div class="card" style="margin-bottom:10px;padding:14px"><div class="section-label" style="margin-bottom:7px">商談の流れ（全期間）</div>'+
       '<div class="funnel">'+
         Calc.funnel("all").map(function(s, i){
           return (i>0 ? '<div class="funnel__conv">'+esc(s.convLabel)+' <b>'+(s.conv===null?"—":pct(s.conv*100))+'</b></div>' : '')+
@@ -5749,7 +5789,7 @@ function ViewAnalytics(){
     '</div>'+
     barTable("発見経路別 成果（どこから探すのが効率的か）", bySource, { head:"発見経路", days:true })+
     barTable("見込み度別 成果", byProb, { head:"見込み度" })+
-    '<div class="card"><div class="section-label">失注理由ランキング</div>'+
+    '<div class="card" style="margin-bottom:10px;padding:14px"><div class="section-label" style="margin-bottom:7px">失注理由ランキング</div>'+
       (lostRank.length ? '<div class="barlist">'+lostRank.map(function(r){
         var w = Math.round(r.n / lostRank[0].n * 100);
         return '<div class="barlist__row"><span>'+esc(r.k)+'</span><span class="barlist__track"><span class="barlist__fill" style="width:'+w+'%"></span></span><span class="barlist__val">'+r.n+'</span></div>';
@@ -5759,7 +5799,7 @@ function ViewAnalytics(){
       var reviews = deals.filter(function(d){ return d.status === "lost" && (d.lost_detail || d.lost_learn); })
         .sort(function(a,b){ return (b.lost_on||"") < (a.lost_on||"") ? -1 : (b.lost_on||"") > (a.lost_on||"") ? 1 : 0; })
         .slice(0, 12);
-      return '<div class="card"><div class="section-label">失注の振り返り</div>'+
+      return '<div class="card" style="padding:14px"><div class="section-label" style="margin-bottom:7px">失注の振り返り</div>'+
         (reviews.length
           ? reviews.map(function(d){
               return '<div class="fu-item" data-goto="'+d.id+'">'+
