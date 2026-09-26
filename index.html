@@ -473,7 +473,7 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 .funnel__conv b{color:var(--text-2)}
 
 /* Bars (analytics) */
-.barlist{display:flex;flex-direction:column;gap:11px}
+.barlist{display:flex;flex-direction:column;gap:8px}
 .barlist__row{display:grid;grid-template-columns:120px 1fr auto;align-items:center;gap:10px;font-size:13px}
 .barlist__track{height:12px;border-radius:999px;background:var(--surface-3);overflow:hidden}
 .barlist__fill{display:block;height:100%;border-radius:999px;background:var(--primary);transition:width .3s ease}
@@ -815,9 +815,21 @@ tr.is-fav td:first-child,.deal-card.is-fav{box-shadow:inset 3px 0 0 var(--warnin
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-12 r131";
+var APP_BUILD = "2026-09-27 r134";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-09-27 r134": [
+    "「利益管理」画面をコンパクトにしました。上の4つの数字を「¥500万」のような短い表記に、案件カードも2行にまとめて見やすくしました",
+    "月別 確定利益の推移グラフの金額が画面端で見切れていた不具合を修正しました（同じく短い表記に変更）"
+  ],
+  "2026-09-27 r133": [
+    "営業ステータスから「検討中」を廃止しました。見積提出の次は成約・失注で判断してください（「検討中」だった案件は自動的に「見積提出」になります。日付などのデータは消えません）",
+    "案件一覧に「成約待ちの案件」を追加しました。見積提出済みの案件は、成約・失注・保留と同じように一覧下部にまとめて表示されます",
+    "案件詳細の「金額管理」を、他の項目と同じ折りたたみ式にしました。閉じていても見込利益だけは見出しに出ます"
+  ],
+  "2026-09-19 r132": [
+    "案件詳細の「次回追客」に「追客なし」を追加しました。期限を決められない案件で使うと、追客管理の一覧・催促から外れます（優先度や案件一覧など、それ以外の表示は通常通りです）"
+  ],
   "2026-09-12 r131": [
     "他の端末との同期を全体的に高速化しました。特に写真が複数枚ある時は、1枚ずつ順番に送っていたのを同時に送るように変更し、大幅に速くなりました"
   ],
@@ -1072,14 +1084,13 @@ var PIPELINE = [
   { key:"new",              label:"新規",     dateField:null },
   { key:"phone_connected",  label:"初回接触", dateField:"phone_connected_on" },
   { key:"quote_requested",  label:"見積依頼", dateField:"quote_requested_on" },
-  { key:"quote_submitted",  label:"見積提出", dateField:"quote_submitted_on" },
-  { key:"considering",      label:"検討中",   dateField:"considering_on" }
+  { key:"quote_submitted",  label:"見積提出", dateField:"quote_submitted_on" }
 ];
 var STATUS_WON  = { key:"won",  label:"成約", dateField:"won_on" };
 var STATUS_LOST = { key:"lost", label:"失注", dateField:"lost_on" };
 var ALL_STATUSES = PIPELINE.concat([STATUS_WON, STATUS_LOST]);
 // r70でパイプラインから削除した段階。連絡ログの過去履歴（「→ ◯◯ に変更」）だけ、ラベルを正しく出すために残す
-var RETIRED_STATUS_LABELS = { survey_scheduled:"現調予定", survey_done:"現調完了" };
+var RETIRED_STATUS_LABELS = { survey_scheduled:"現調予定", survey_done:"現調完了", considering:"検討中" };
 function statusMeta(key){
   for (var i=0;i<ALL_STATUSES.length;i++) if (ALL_STATUSES[i].key===key) return ALL_STATUSES[i];
   return PIPELINE[0];
@@ -1096,7 +1107,7 @@ function pipeIndex(key){
 }
 /* 「◯◯ に変更」の履歴を取り消したとき、案件を戻すべき段階。戻せないなら null。 */
 function eventRevertTarget(status){
-  if (status === "won") return "considering";              // 成約 → 検討中へ
+  if (status === "won") return "quote_submitted";           // 成約 → 見積提出へ（r133で検討中を廃止）
   var i = pipeIndex(status);
   if (i >= 1) return PIPELINE[i-1].key;                     // パイプライン内は1つ前へ
   return null;                                              // 新規・失注などは案件を触らない
@@ -1552,6 +1563,7 @@ var DB = {
       favorite:false,           // お気に入り（r106・一覧で上に固定）
       next_follow_on:null, next_action:"", next_action_other:"",
       awaiting_reply:false,     // 折り返し待ち（r108・ONで追客の催促を止める）
+      no_followup:false,       // 追客なし（r132・期限を決められない案件用。追客管理から外れるだけで優先度・一覧は通常通り）
       on_hold:false, hold_on:null, hold_note:"",   // 保留（r115・ONで追客・優先度の対象から外す。一覧下部の「保留中」から確認）
       lost_reason:"", lost_reason_note:"",
       lost_detail:"",           // 失注のくわしい状況（振り返り用）
@@ -1789,6 +1801,7 @@ var DB = {
       phone_connected_on:null, quote_requested_on:null, survey_scheduled_on:null, survey_done_on:null,
       quote_submitted_on:null, considering_on:null, won_on:null, lost_on:null,
       amount_presented:null, cost_construction:null, cost_other:null, cost_outsource:null, favorite:false, awaiting_reply:false,
+      no_followup:false,
       on_hold:false, hold_on:null, hold_note:"",
       next_follow_on:null, next_action:"", next_action_other:"", lost_reason:"", lost_reason_note:"",
       survey:null, pre:null, client_budget:null, client_budget_band:"", files:[], pay_items:[], handover:"", torihiki:"", property_price:null
@@ -1840,6 +1853,13 @@ var DB = {
         changed = true;
       }
     });
+    // r133: パイプラインから「検討中」を削除。この段階にいる案件は「見積提出」へ寄せる（considering_on等のデータは消さない・表示上の段階だけ調整）
+    deals.forEach(function(d){
+      if (d.status === "considering"){
+        d.status = "quote_submitted";
+        changed = true;
+      }
+    });
     if (changed) writeDeals(deals, "migrate");
     // r64: 新規案件が引き継ぐ「前回使った単価」も、単価マスタの内容から1回だけブートストラップ
     var rawSettings = read(K.settings, {});
@@ -1877,10 +1897,10 @@ var DB = {
         stamps:{ phone_connected_on:daysAgo(13), quote_requested_on:daysAgo(11) },
         survey:{ structure:"鉄骨造", tsubo:62, floors:3, building_age:33, road_width_m:6, heavy_machine_ok:true, has_residue:false, asbestos:"なし" } },
       { company_name:"グリーン開発", contact_name:"鈴木 一郎", phone:"090-5555-6666", source:"不動産会社",
-        site_address:"千葉県船橋市本町4-1", probability:"A", status:"considering",
+        site_address:"千葉県船橋市本町4-1", probability:"A", status:"quote_submitted",
         created_on:daysAgo(30), amount_presented:15400000, cost_construction:10800000, cost_other:600000,
         next_follow_on:inXdays(2), next_action:"電話",
-        stamps:{ phone_connected_on:daysAgo(29), quote_requested_on:daysAgo(26), quote_submitted_on:daysAgo(10), considering_on:daysAgo(4) },
+        stamps:{ phone_connected_on:daysAgo(29), quote_requested_on:daysAgo(26), quote_submitted_on:daysAgo(10) },
         survey:{ structure:"RC造", tsubo:88, floors:4, building_age:47, road_width_m:5.5, heavy_machine_ok:false, has_residue:true, asbestos:"あり" } },
       { company_name:"あおぞら地所", contact_name:"高橋 実", phone:"080-7777-8888", source:"SUUMO",
         site_address:"東京都江戸川区中央3-9", probability:"C", status:"phone_connected",
@@ -2475,7 +2495,7 @@ var Calc = {
     s += ({ A:3, B:1, C:-1, D:-2 })[deal.probability] || 0;
     if (deal.status === "quote_submitted" || deal.status === "considering") s += 2;
     if (deal.status === "quote_requested") s += 1;
-    if (deal.next_follow_on && !deal.awaiting_reply){   // 折り返し待ちは期限で急かさない
+    if (deal.next_follow_on && !deal.awaiting_reply && !deal.no_followup){   // 折り返し待ち・追客なしは期限で急かさない
       if (deal.next_follow_on < isoToday()) s += 3;
       else if (deal.next_follow_on === isoToday()) s += 2;
     }
@@ -2508,6 +2528,7 @@ var Calc = {
     var out = { overdue:[], today:[], upcoming:[], waiting:[] };
     DB.deals().filter(Calc.isActive).forEach(function(d){
       if (d.on_hold) return;   // 保留中は追客管理から外す（r115）
+      if (d.no_followup) return;   // 追客なしは追客管理から外す（r132・期限を決められない案件用）
       if (d.awaiting_reply){ out.waiting.push(d); return; }   // 折り返し待ちは催促しない
       if (!d.next_follow_on) return;
       if (d.next_follow_on < t) out.overdue.push(d);
@@ -3011,8 +3032,8 @@ function ViewDashboard(){
   var scopeLabel = dashScope === "month" ? "今月" : "全期間";
   var prioCands = Calc.topPriority(12);
   var _td = isoToday();
-  var prioToday  = prioCands.filter(function(d){ return !d.awaiting_reply && d.next_follow_on && d.next_follow_on <= _td; }).slice(0, 6);
-  var prioFuture = prioCands.filter(function(d){ return d.awaiting_reply || !(d.next_follow_on && d.next_follow_on <= _td); }).slice(0, 5);
+  var prioToday  = prioCands.filter(function(d){ return !d.awaiting_reply && !d.no_followup && d.next_follow_on && d.next_follow_on <= _td; }).slice(0, 6);
+  var prioFuture = prioCands.filter(function(d){ return d.awaiting_reply || d.no_followup || !(d.next_follow_on && d.next_follow_on <= _td); }).slice(0, 5);
   var totalDeals = DB.deals().length;
 
   var heroCards = [
@@ -3116,6 +3137,7 @@ function ViewDashboard(){
     var pr = Calc.profit(d);
     var fu = "";
     if (d.awaiting_reply) fu = ' <span class="prio__fu" style="color:var(--muted)">折り返し待ち</span>';
+    else if (d.no_followup) fu = ' <span class="prio__fu" style="color:var(--muted)">追客なし</span>';
     else if (showFu && d.next_follow_on) fu = ' <span class="prio__fu">追客 '+fmtDate(d.next_follow_on)+'</span>';
     return '<div class="prio__item" data-goto="'+d.id+'">'+
       '<div class="prio__co">'+esc(d.company_name||"（無名）")+'</div>'+
@@ -3163,6 +3185,7 @@ var dealSort = "created_desc";
 var dealsShowLost = false;   // r107: 失注した案件は一覧下部の小さなボタンから開く
 var dealsShowWon = false;    // r108: 成約した案件も同様に下部から開く
 var dealsShowHold = false;   // r115: 保留中の案件も同様に下部から開く
+var dealsShowPending = false; // r133: 成約待ち（見積提出済み）の案件も同様に下部から開く
 var DEAL_SORTS = [
   { k:"created_desc",  label:"登録が新しい順" },
   { k:"follow_asc",    label:"次回追客が近い順" },
@@ -3194,6 +3217,7 @@ function ViewDeals(){
     if (f.favOnly && !d.favorite) return false;
     if (d.status === "lost" || d.status === "won") return false;   // 失注・成約は一覧に出さない（下部の各ボタンから開く）
     if (d.on_hold) return false;   // 保留中も一覧に出さない（下部のボタンから開く・r115）
+    if (d.status === "quote_submitted") return false;   // 成約待ちも一覧に出さない（下部のボタンから開く・r133）
     return true;
   }
   var filtered = deals.filter(pass);
@@ -3203,6 +3227,8 @@ function ViewDeals(){
     .sort(function(a,b){ return (b.won_on||"") < (a.won_on||"") ? -1 : (b.won_on||"") > (a.won_on||"") ? 1 : 0; });
   var holdDeals = deals.filter(function(d){ return Calc.isActive(d) && d.on_hold; })
     .sort(function(a,b){ return (b.hold_on||"") < (a.hold_on||"") ? -1 : (b.hold_on||"") > (a.hold_on||"") ? 1 : 0; });
+  var pendingDeals = deals.filter(function(d){ return d.status === "quote_submitted" && !d.on_hold; })   // 成約待ち（r133）
+    .sort(function(a,b){ return (b.quote_submitted_on||"") < (a.quote_submitted_on||"") ? -1 : (b.quote_submitted_on||"") > (a.quote_submitted_on||"") ? 1 : 0; });
   var sortFns = {
     created_desc: function(a,b){ return (b.created_on||"") < (a.created_on||"") ? -1 : (b.created_on||"") > (a.created_on||"") ? 1 : 0; },
     follow_asc: function(a,b){ var av=a.next_follow_on||"9999-99-99", bv=b.next_follow_on||"9999-99-99"; return av<bv?-1:av>bv?1:0; },
@@ -3219,7 +3245,7 @@ function ViewDeals(){
   filtered = filtered.filter(function(d){ return d.favorite; }).concat(filtered.filter(function(d){ return !d.favorite; }));
 
   var html =
-    '<div class="page-head only-desktop"><div><h1>案件一覧</h1><p>'+filtered.length+' / '+(deals.length - lostDeals.length - wonDeals.length - holdDeals.length)+' 件（進行中）</p></div></div>';
+    '<div class="page-head only-desktop"><div><h1>案件一覧</h1><p>'+filtered.length+' / '+(deals.length - lostDeals.length - wonDeals.length - holdDeals.length - pendingDeals.length)+' 件（進行中）</p></div></div>';
 
   var activeFilterCount = ["status","prob","source","from","to"].filter(function(kk){ return dealFilters[kk]; }).length;
   html += '<div class="filterbar">'+
@@ -3231,7 +3257,7 @@ function ViewDeals(){
     '<button class="btn btn--soft btn--sm only-mobile" id="filterToggle">絞り込み'+(activeFilterCount?' <span class="badge" style="--c:var(--primary)">'+activeFilterCount+'</span>':'')+'</button>'+
     '<div class="filter-more'+(activeFilterCount?' is-open':'')+'" id="filterMore">'+
       '<select class="select" id="fstatus" style="max-width:150px"><option value="">ステータス：全て</option>'+
-        ALL_STATUSES.filter(function(s){ return s.key !== "lost" && s.key !== "won"; }).map(function(s){ return '<option value="'+s.key+'"'+(dealFilters.status===s.key?" selected":"")+'>'+s.label+'</option>'; }).join("")+
+        ALL_STATUSES.filter(function(s){ return s.key !== "lost" && s.key !== "won" && s.key !== "quote_submitted"; }).map(function(s){ return '<option value="'+s.key+'"'+(dealFilters.status===s.key?" selected":"")+'>'+s.label+'</option>'; }).join("")+
       '</select>'+
       '<select class="select" id="fprob" style="max-width:130px"><option value="">見込み度：全て</option>'+
         PROBABILITIES.map(function(p){ return '<option value="'+p.k+'"'+(dealFilters.prob===p.k?" selected":"")+'>'+p.k+'</option>'; }).join("")+
@@ -3263,7 +3289,7 @@ function ViewDeals(){
     };
     filtered.forEach(function(d){
       var pr = Calc.profit(d);
-      var overdue = d.next_follow_on && d.next_follow_on < isoToday() && Calc.isActive(d) && !d.awaiting_reply;
+      var overdue = d.next_follow_on && d.next_follow_on < isoToday() && Calc.isActive(d) && !d.awaiting_reply && !d.no_followup;
       var stale = Calc.isActive(d) ? lastContactDays(d) : null;
       var staleB = (stale !== null && stale >= 10) ? ' <span class="badge '+(stale>=21?'pr-high':'pr-mid')+'" title="最終接触からの日数">放置'+stale+'日</span>' : '';
       html += '<tr class="clickable'+(d.favorite?' is-fav':'')+'" data-goto="'+d.id+'">'+
@@ -3277,7 +3303,7 @@ function ViewDeals(){
         '<td>'+probBadge(d.probability)+'</td>'+
         '<td class="num" title="'+yen(d.amount_presented)+'">'+yenMan(d.amount_presented)+'</td>'+
         '<td class="num" title="'+yen(pr.profit)+'">'+yenMan(pr.profit)+'</td>'+
-        '<td style="white-space:nowrap'+(overdue?';color:var(--danger);font-weight:800':'')+'">'+(d.awaiting_reply?'<span class="muted">折り返し待ち</span>':(d.next_follow_on?fmtDate(d.next_follow_on):"—"))+'</td>'+
+        '<td style="white-space:nowrap'+(overdue?';color:var(--danger);font-weight:800':'')+'">'+(d.awaiting_reply?'<span class="muted">折り返し待ち</span>':d.no_followup?'<span class="muted">追客なし</span>':(d.next_follow_on?fmtDate(d.next_follow_on):"—"))+'</td>'+
         '<td>'+(prioBadge(Calc.priorityBucket(d))||"—")+'</td>'+
       '</tr>';
     });
@@ -3287,7 +3313,7 @@ function ViewDeals(){
     html += '<div class="deal-cards only-mobile">';
     filtered.forEach(function(d){
       var pr = Calc.profit(d);
-      var overdue = d.next_follow_on && d.next_follow_on < isoToday() && Calc.isActive(d) && !d.awaiting_reply;
+      var overdue = d.next_follow_on && d.next_follow_on < isoToday() && Calc.isActive(d) && !d.awaiting_reply && !d.no_followup;
       var stale = Calc.isActive(d) ? lastContactDays(d) : null;
       var staleB = (stale !== null && stale >= 10) ? '<span class="badge '+(stale>=21?'pr-high':'pr-mid')+'">放置'+stale+'日</span>' : '';
       html += '<div class="deal-card'+(d.favorite?' is-fav':'')+'" data-goto="'+d.id+'">'+
@@ -3302,11 +3328,26 @@ function ViewDeals(){
         '<div class="deal-card__row">'+
           '<span class="muted">提示 '+yenMan(d.amount_presented)+'</span>'+
           '<span class="deal-card__amt">利益 '+yenMan(pr.profit)+'</span>'+
-          '<span style="white-space:nowrap;'+(overdue?'color:var(--danger);font-weight:800':'color:var(--muted)')+'">'+(d.awaiting_reply?'折り返し待ち':'追客 '+(d.next_follow_on?fmtDate(d.next_follow_on):"—"))+'</span>'+
+          '<span style="white-space:nowrap;'+(overdue?'color:var(--danger);font-weight:800':'color:var(--muted)')+'">'+(d.awaiting_reply?'折り返し待ち':d.no_followup?'追客なし':'追客 '+(d.next_follow_on?fmtDate(d.next_follow_on):"—"))+'</span>'+
         '</div>'+
       '</div>';
     });
     html += '</div>';
+  }
+
+  // 成約待ちの案件（下部の小さなボタンから開閉・r133）
+  if (pendingDeals.length){
+    html += '<button type="button" class="lost-toggle'+(dealsShowPending?' is-open':'')+'" id="pendingToggle" aria-expanded="'+(dealsShowPending?'true':'false')+'">'+
+      '成約待ちの案件（'+pendingDeals.length+'）'+icon("chevron","chev")+'</button>'+
+      '<div class="lostlist" id="pendingList"'+(dealsShowPending?'':' hidden')+'>'+
+        pendingDeals.map(function(d){
+          var ppr = Calc.profit(d);
+          return '<div class="lostrow" data-goto="'+d.id+'">'+
+            '<span class="lostrow__co">'+esc(d.company_name||"（無名）")+'</span>'+
+            '<span class="lostrow__meta">見込利益 '+yenMan(ppr.profit)+(d.quote_submitted_on?' ・ 提出 '+fmtDate(d.quote_submitted_on):'')+'</span>'+
+          '</div>';
+        }).join("")+
+      '</div>';
   }
 
   // 成約した案件（下部の小さなボタンから開閉）
@@ -3399,6 +3440,8 @@ function ViewDeals(){
       if (wonTog) wonTog.onclick = function(){ dealsShowWon = !dealsShowWon; render(); };
       var holdTog = root.querySelector("#holdToggle");
       if (holdTog) holdTog.onclick = function(){ dealsShowHold = !dealsShowHold; render(); };
+      var pendingTog = root.querySelector("#pendingToggle");
+      if (pendingTog) pendingTog.onclick = function(){ dealsShowPending = !dealsShowPending; render(); };
       var fc = root.querySelector("#fclear");
       if (fc) fc.onclick = function(){ dealFilters = { q:"", status:"", prob:"", source:"", from:"", to:"", favOnly:false }; render(); };
     }
@@ -4762,6 +4805,7 @@ function ViewDealDetail(id){
     '<p>'+esc(deal.code)+' ・ 登録 '+fmtDateFull(deal.created_on)+' ・ '+esc(sourceLabel(deal)||"経路未設定")+
       (prioBadge(Calc.priorityBucket(deal))?' ・ '+prioBadge(Calc.priorityBucket(deal)):'')+
       (deal.awaiting_reply?' ・ <span class="badge" style="--c:var(--muted)">折り返し待ち</span>':'')+
+      (deal.no_followup?' ・ <span class="badge" style="--c:var(--muted)">追客なし</span>':'')+
       (deal.on_hold?' ・ <span class="badge" style="--c:var(--muted)">保留中</span>':'')+'</p>'+
     '</div>'+
     '<button class="btn btn--danger-soft only-desktop" data-act="delete">'+icon("trash")+'削除</button>'+
@@ -4840,6 +4884,8 @@ function ViewDealDetail(id){
       '</div>'+
       '<label class="check'+(deal.awaiting_reply?" is-on":"")+'" style="margin-top:10px"><input type="checkbox" data-await'+(deal.awaiting_reply?" checked":"")+'> 折り返し待ち（追客の催促を止める）</label>'+
       (deal.awaiting_reply?'<div class="field__hint" style="margin-top:6px">「今日対応」や追客管理の期限超過に出さなくなります。返事が来たらチェックを外してください。</div>':'')+
+      '<label class="check'+(deal.no_followup?" is-on":"")+'" style="margin-top:6px"><input type="checkbox" data-no-followup'+(deal.no_followup?" checked":"")+'> 追客なし（期限を決めない案件）</label>'+
+      (deal.no_followup?'<div class="field__hint" style="margin-top:6px">追客管理の一覧・催促から外れます。優先度や案件一覧など、それ以外の表示は通常通りです。</div>':'')+
     '</div>'+
   '</div>';
 
@@ -4862,9 +4908,11 @@ function ViewDealDetail(id){
       '</div>'+
     '</div></div>';
 
-  // Money panel（自社で受ける場合 / 外注に出す場合 の利益を並べて表示）
+  // Money panel（自社で受ける場合 / 外注に出す場合 の利益を並べて表示・r133で折りたたみ式に）
   var prO = Calc.profitOutsource(deal);
-  html += '<div class="card"><div class="section-label">金額管理</div>'+
+  html += '<div class="disclosure" id="moneyDisc">'+
+    '<button type="button" class="disclosure__btn" id="moneyToggle"><span>金額管理　<span class="muted" id="mpSummary" style="color:'+(pr.profit!==null&&pr.profit<0?"var(--danger)":"var(--success)")+'">見込利益 '+yen(pr.profit)+'</span></span>'+icon("chevron","chev")+'</button>'+
+    '<div class="disclosure__body">'+
     '<div class="form-grid-2">'+
       moneyField("提示金額","amount_presented",deal.amount_presented,{hint:false})+
       moneyField("施工原価（自社でやる時）","cost_construction",deal.cost_construction,{hint:false})+
@@ -4884,7 +4932,7 @@ function ViewDealDetail(id){
         '<div class="profit2__row"><span class="profit2__k">利益率</span><span class="profit2__v" id="mpRateOut">'+pct(prO.rate,1)+'</span></div>'+
       '</div>'+
     '</div>'+
-  '</div>';
+    '</div></div>';
 
   // 入金・支払の予定（資金繰り）
   html += payPlanCardHTML(deal);
@@ -4905,7 +4953,7 @@ function ViewDealDetail(id){
       '<button class="btn btn--sm btn--ghost" data-act="delete" aria-label="この案件を削除">'+icon("trash")+'</button>',
     mount:function(root){
       // autosave text/select/date/number fields
-      var autoFields = root.querySelectorAll('.card [data-field], .timeline [data-field]');
+      var autoFields = root.querySelectorAll('.card [data-field], .timeline [data-field], #moneyDisc [data-field]');
       function saveField(el){
         var f = el.getAttribute("data-field");
         var val = (el.type === "number" || el.getAttribute("data-num")) ? num(el.value) : el.value;
@@ -4925,6 +4973,7 @@ function ViewDealDetail(id){
         paintVal(root.querySelector("#mpRate"), pct(p2.rate,1));
         paintVal(root.querySelector("#mpProfitOut"), yen(pO2.profit), pO2.profit!==null&&pO2.profit<0);
         paintVal(root.querySelector("#mpRateOut"), pct(pO2.rate,1));
+        paintVal(root.querySelector("#mpSummary"), "見込利益 "+yen(p2.profit), p2.profit!==null&&p2.profit<0);
         toast("保存しました");
       }
       autoFields.forEach(function(el){ el.addEventListener("change", function(){ saveField(el); }); });
@@ -4940,6 +4989,10 @@ function ViewDealDetail(id){
       var preDisc = root.querySelector("#preDisc");
       if (preDisc) root.querySelector("#preToggle").onclick = function(){ preDisc.classList.toggle("is-open"); };
       wirePreEstimate(root, id);
+
+      // 金額管理（折りたたみ・r133）
+      var moneyDisc = root.querySelector("#moneyDisc");
+      if (moneyDisc) root.querySelector("#moneyToggle").onclick = function(){ moneyDisc.classList.toggle("is-open"); };
       wireContactLog(root, id);
       wireFilesCard(root, id);
       wirePayPlanCard(root, id);
@@ -4985,9 +5038,7 @@ function ViewDealDetail(id){
 
       var reopen = root.querySelector('[data-act="reopen"]');
       if (reopen) reopen.onclick = function(){
-        DB.updateDeal(id, { status: deal.reached_before || "quote_submitted" });
-        DB._addEvent(id, "considering", isoToday());
-        DB.updateDeal(id, { status:"considering" });
+        DB.setStatus(id, deal.reached_before || "quote_submitted");
         toast("対応中に戻しました"); render();
       };
 
@@ -5044,6 +5095,13 @@ function ViewDealDetail(id){
       if (awaitCb) awaitCb.onchange = function(){
         DB.updateDeal(id, { awaiting_reply: awaitCb.checked });
         toast(awaitCb.checked ? "折り返し待ちにしました（催促を止めます）" : "折り返し待ちを解除しました");
+        render();
+      };
+      // 追客なし（r132）
+      var noFollowCb = root.querySelector('[data-no-followup]');
+      if (noFollowCb) noFollowCb.onchange = function(){
+        DB.updateDeal(id, { no_followup: noFollowCb.checked });
+        toast(noFollowCb.checked ? "追客なしにしました（追客管理から外れます）" : "追客なしを解除しました");
         render();
       };
 
@@ -5315,11 +5373,11 @@ function ViewProfit(){
 
   var html =
     '<div class="page-head only-desktop"><div><h1>利益管理</h1><p>案件別の見込利益・利益率。進行中と成約で切り替え。</p></div></div>'+
-    '<div class="stats" style="margin-bottom:16px">'+
-      '<div class="stat stat--accent"><div class="stat__label">進行中 提示金額 合計</div><div class="stat__value tnum">'+yen(sumPresented)+'</div></div>'+
-      '<div class="stat stat--accent"><div class="stat__label">見込利益 合計（進行中）</div><div class="stat__value tnum">'+yen(sumEst)+'</div></div>'+
-      '<div class="stat stat--good"><div class="stat__label">確定利益 合計（成約）</div><div class="stat__value tnum">'+yen(sumConf)+'</div></div>'+
-      '<div class="stat"><div class="stat__label">平均利益率（成約 '+wonCount+'件）</div><div class="stat__value tnum">'+pct(avgRateWon,1)+'</div></div>'+
+    '<div class="stats stats--hero" style="margin-bottom:14px">'+
+      '<div class="stat stat--hero stat--accent" title="'+esc(yen(sumPresented))+'"><div class="stat__label">進行中 提示金額 合計</div><div class="stat__value tnum">'+esc(yenMan(sumPresented))+'</div></div>'+
+      '<div class="stat stat--hero stat--accent" title="'+esc(yen(sumEst))+'"><div class="stat__label">見込利益 合計（進行中）</div><div class="stat__value tnum">'+esc(yenMan(sumEst))+'</div></div>'+
+      '<div class="stat stat--hero stat--good" title="'+esc(yen(sumConf))+'"><div class="stat__label">確定利益 合計（成約）</div><div class="stat__value tnum">'+esc(yenMan(sumConf))+'</div></div>'+
+      '<div class="stat stat--hero"><div class="stat__label">平均利益率（成約 '+wonCount+'件）</div><div class="stat__value tnum">'+pct(avgRateWon,1)+'</div></div>'+
     '</div>';
 
   // 月別 確定利益 推移（成約が2ヶ月以上に分かれているときだけ＝推移として意味があるとき）
@@ -5335,7 +5393,7 @@ function ViewProfit(){
         return '<div class="barlist__row">'+
           '<span'+(m.isCurrent?' style="font-weight:800;color:var(--primary)"':'')+'>'+esc(m.label)+(m.isCurrent?"（今月）":"")+'</span>'+
           '<span class="barlist__track"><span class="barlist__fill" style="width:'+w+'%;background:'+col+'"></span></span>'+
-          '<span class="barlist__val" style="color:'+(m.profit===0?"var(--muted)":col)+'">'+yen(m.profit)+'</span>'+
+          '<span class="barlist__val" style="color:'+(m.profit===0?"var(--muted)":col)+'" title="'+esc(yen(m.profit))+'">'+esc(yenMan(m.profit))+'</span>'+
         '</div>';
       }).join("")+
       '</div></div>';
@@ -5380,15 +5438,15 @@ function ViewProfit(){
       '</tr></tfoot></table></div>';
 
     // mobile cards
-    html += '<div class="stack only-mobile">';
+    html += '<div class="deal-cards only-mobile">';
     list.forEach(function(d){
       var p = Calc.profit(d);
+      var cost = (num(d.cost_construction)||0)+(num(d.cost_other)||0);
       html += '<div class="deal-card" data-goto="'+d.id+'">'+
         '<div class="deal-card__top"><div class="deal-card__co">'+esc(d.company_name||"（無名）")+'</div>'+statusBadge(d.status)+'</div>'+
-        '<div class="deal-card__row"><span class="muted">提示 '+yen(d.amount_presented)+'</span>'+
-          '<span class="deal-card__amt" style="color:'+rateColor(p.rate,p.profit)+'">'+yen(p.profit)+'</span></div>'+
-        '<div class="deal-card__row"><span class="muted">原価（施工＋その他）</span><span>'+yen((num(d.cost_construction)||0)+(num(d.cost_other)||0))+'</span></div>'+
-        '<div class="deal-card__row"><span class="muted">利益率</span><span style="font-weight:800;color:'+rateColor(p.rate,p.profit)+'">'+pct(p.rate,1)+'</span></div>'+
+        '<div class="deal-card__row"><span class="muted">提示 '+yenMan(d.amount_presented)+'</span><span class="muted">原価 '+yenMan(cost)+'</span></div>'+
+        '<div class="deal-card__row"><span class="deal-card__amt" style="color:'+rateColor(p.rate,p.profit)+'" title="'+esc(yen(p.profit))+'">見込利益 '+yenMan(p.profit)+'</span>'+
+          '<span style="font-weight:800;color:'+rateColor(p.rate,p.profit)+'">'+pct(p.rate,1)+'</span></div>'+
       '</div>';
     });
     html += '</div>';
