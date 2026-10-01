@@ -384,6 +384,16 @@ h1,h2,h3,h4{margin:0;font-weight:700;letter-spacing:0}
 .input.is-invalid,.select.is-invalid,textarea.input.is-invalid{
   border-color:var(--danger);box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 18%,transparent);
 }
+.field__row{display:flex;gap:6px;align-items:stretch}
+.field__row .input{flex:1 1 auto;min-width:0}
+.pastebtn{
+  flex:0 0 auto;width:40px;min-height:44px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--radius-sm);
+  color:var(--text-2);cursor:pointer;transition:border-color .12s ease,color .12s ease,background .12s ease;
+}
+.pastebtn svg{width:17px;height:17px}
+.pastebtn:hover,.pastebtn:active{color:var(--primary);border-color:var(--primary)}
 .fielderr{color:var(--danger);font-size:12px;font-weight:700;margin-top:5px}
 @keyframes shakeX{10%,90%{transform:translateX(-1px)}20%,80%{transform:translateX(2px)}30%,50%,70%{transform:translateX(-4px)}40%,60%{transform:translateX(4px)}}
 .shake{animation:shakeX .4s ease}
@@ -865,15 +875,34 @@ tr.row-pr--low>td:first-child{box-shadow:inset 3px 0 0 #7d8896}
     <g id="i-mail"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="3 6 12 13 21 6"/></g>
     <g id="i-pin"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></g>
     <g id="i-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></g>
+    <g id="i-clipboard"><rect x="7" y="3" width="10" height="4" rx="1"/><path d="M7 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/></g>
   </defs>
 </svg>
 
 <script>
 (function(){
 "use strict";
-var APP_BUILD = "2026-09-29 r146";
+var APP_BUILD = "2026-10-01 r148";
 // アップデート後の初回起動に「更新しました」で見せる変更点（今回ぶんだけでOK）
 var WHATS_NEW = {
+  "2026-10-01 r148": [
+    "新規登録した案件は、最初から「追客なし」にしました（追客で管理したい時は案件詳細でオフにできます）",
+    "「追客管理」「シミュレーション」のタブを廃止しました",
+    "ホームの「見込利益」のグラフに、月のラベルを全部表示するようにしました",
+    "ホームの「案件」カードの名前をシンプルにしました。案件一覧・案件カードの「放置◯日」表示もなくしました",
+    "基本情報の「引き渡し方法」「取引態様」「案件発見経路」をボタンで選べるようにしました",
+    "物件ページURL欄・現場住所欄・電話番号欄に、コピーした文字をすぐ貼り付けられるボタンを追加しました",
+    "物件情報の「構造」「階数」をボタンで選べるようにしました",
+    "金額管理の「その他原価」を廃止し、あとから出た費用を都度追加できる「追加費用」欄にしました",
+    "資金繰りの「今の現金」を通帳／手元の現金に分けて入力できるように、コンパクトにしました",
+    "新規登録フォームから「案件登録日」欄をなくしました（登録した日が自動で入ります）",
+    "新規登録フォーム・案件詳細の「現場住所」「物件ページURL」を横並びにしてコンパクトにしました",
+    "新規登録フォームで「現場住所」「物件ページURL」の並びがズレていた不具合を修正しました",
+    "金額欄の入力例を「680万」→「100万」に変更しました"
+  ],
+  "2026-10-01 r147": [
+    "ホームのヒーローカードを改善。成約がまだ無い時でも、見込利益（進行中）だけは見られるようにしました（確定利益の推移グラフは成約後に表示されます）"
+  ],
   "2026-09-29 r146": [
     "案件詳細の「物件情報」「金額管理」などの開閉タブのデザインを、点線の枠から今のデザインに合わせて改善しました"
   ],
@@ -1213,7 +1242,7 @@ function eventRevertTarget(status){
   return null;                                              // 新規・失注などは案件を触らない
 }
 
-var SOURCES = ["ふれんず","アットホーム","LIFULL HOME'S","SUUMO","ラビーネット","くらさぽ福岡","ニフティ不動産","不動産会社","紹介","既存顧客","電話営業","その他"];
+var SOURCES = ["アットホーム","紹介","その他"];
 var STRUCTURES = ["木造","鉄骨造","RC造","SRC造","その他"];
 var NEXT_ACTIONS = ["電話","メール","見積確認","再見積","判断確認","その他"];
 var LOST_REASONS = ["価格","他社に決定","解体中止","時期延期","連絡取れず","条件が合わない","対応速度","その他"];
@@ -1598,6 +1627,7 @@ var DB = {
     return Object.assign({ theme:"dark", goal_won:0, goal_profit:0,
       own_company:"", demo_reg_expiry:"", const_license_expiry:"",   // r117で廃止・未使用（旧データ温存）
       cash_on_hand:null, cash_on_hand_on:"",
+      cash_bank:null, cash_wallet:null,   // r148: 「通帳・財布の残高」を通帳／現金に分けて詳しく入力できるように。cash_on_handは旧データ温存のため加算して残す
       last_prices:[],   // r64: 新規案件に引き継ぐ「前回使った単価」
       sync_code:"", sync_last_at:0,
       sync_synced_mtime:0, sync_synced_remote_at:0,
@@ -1660,10 +1690,11 @@ var DB = {
       phone_connected_on:null, quote_requested_on:null, survey_scheduled_on:null,
       survey_done_on:null, quote_submitted_on:null, considering_on:null, won_on:null, lost_on:null,
       amount_presented:null, cost_construction:null, cost_other:null, cost_outsource:null,   // cost_outsource: 外注に出す時に協力会社へ払う額（r105）
+      extra_costs:[],            // 追加費用（別途請求ぶん・r148）[{id,label,amount}]。cost_otherは単一欄として廃止・旧データ温存のためキーのみ残置
       favorite:false,           // お気に入り（r106・一覧で上に固定）
       next_follow_on:null, next_action:"", next_action_other:"",
       awaiting_reply:false,     // 折り返し待ち（r108・ONで追客の催促を止める）
-      no_followup:false,       // 追客なし（r132・期限を決められない案件用。追客管理から外れるだけで優先度・一覧は通常通り）
+      no_followup:true,       // 追客なし（r132・期限を決められない案件用。追客管理から外れるだけで優先度・一覧は通常通り）。r148: 新規案件は最初から追客なしがデフォルト
       on_hold:false, hold_on:null, hold_note:"",   // 保留（r115・ONで追客・優先度の対象から外す。一覧下部の「保留中」から確認）
       lost_reason:"", lost_reason_note:"",
       lost_detail:"",           // 失注のくわしい状況（振り返り用）
@@ -1904,7 +1935,8 @@ var DB = {
       no_followup:false,
       on_hold:false, hold_on:null, hold_note:"",
       next_follow_on:null, next_action:"", next_action_other:"", lost_reason:"", lost_reason_note:"",
-      survey:null, pre:null, client_budget:null, client_budget_band:"", files:[], pay_items:[], handover:"", torihiki:"", property_price:null
+      survey:null, pre:null, client_budget:null, client_budget_band:"", files:[], pay_items:[], handover:"", torihiki:"", property_price:null,
+      extra_costs:[]
     };
     var deals = DB.deals(); var changed = false;
     // r64: 単価マスタ廃止 → 案件ごとの単価表へ移行。まだ持っていない案件には、既存の単価マスタの内容を初期値としてコピー（1回だけ・データは消さない）
@@ -2416,19 +2448,25 @@ function syncSoon(){
    Calculations  (lib/calc.ts)
    ============================================================ */
 var Calc = {
+  // r148: その他原価の単一欄は廃止。旧データのcost_other（温存）＋ extra_costs（追加費用リスト）の合計
+  extraCostTotal: function(deal){
+    var sum = num(deal.cost_other) || 0;
+    (deal.extra_costs || []).forEach(function(it){ sum += num(it.amount) || 0; });
+    return sum;
+  },
   profit: function(deal){
     var p = num(deal.amount_presented);
     if (p === null) return { profit:null, rate:null };
-    var cost = (num(deal.cost_construction)||0) + (num(deal.cost_other)||0);
+    var cost = (num(deal.cost_construction)||0) + Calc.extraCostTotal(deal);
     var profit = p - cost;
     var rate = p !== 0 ? (profit / p * 100) : null;
     return { profit:profit, rate:rate };
   },
-  // r105: 外注に出す場合の利益 = 提示金額 − 外注費 − その他原価（自社は上の profit()）
+  // r105: 外注に出す場合の利益 = 提示金額 − 外注費 − 追加費用（自社は上の profit()）
   profitOutsource: function(deal){
     var p = num(deal.amount_presented);
     if (p === null) return { profit:null, rate:null };
-    var cost = (num(deal.cost_outsource)||0) + (num(deal.cost_other)||0);
+    var cost = (num(deal.cost_outsource)||0) + Calc.extraCostTotal(deal);
     var profit = p - cost;
     var rate = p !== 0 ? (profit / p * 100) : null;
     return { profit:profit, rate:rate };
@@ -2622,23 +2660,6 @@ var Calc = {
         return (Calc.profit(b.d).profit||0) - (Calc.profit(a.d).profit||0);
       })
       .slice(0, n).map(function(x){ return x.d; });
-  },
-
-  followBuckets: function(){
-    var t = isoToday();
-    var out = { overdue:[], today:[], upcoming:[], waiting:[] };
-    DB.deals().filter(Calc.isActive).forEach(function(d){
-      if (d.on_hold) return;   // 保留中は追客管理から外す（r115）
-      if (d.no_followup) return;   // 追客なしは追客管理から外す（r132・期限を決められない案件用）
-      if (d.awaiting_reply){ out.waiting.push(d); return; }   // 折り返し待ちは催促しない
-      if (!d.next_follow_on) return;
-      if (d.next_follow_on < t) out.overdue.push(d);
-      else if (d.next_follow_on === t) out.today.push(d);
-      else out.upcoming.push(d);
-    });
-    function by(a,b){ return (a.next_follow_on||"") < (b.next_follow_on||"") ? -1 : 1; }
-    out.overdue.sort(by); out.today.sort(by); out.upcoming.sort(by); out.waiting.sort(by);
-    return out;
   }
 };
 
@@ -2818,12 +2839,12 @@ function moneyField(label, name, value, opts){
   var inner =
     '<span class="datewrap moneywrap">'+
       '<input class="input moneyin" data-moneyfor="'+name+'" type="text" inputmode="numeric" '+
-        'placeholder="'+esc(opts.placeholder||"例) 6800000 / 680万")+'" value="'+esc(disp)+'" autocomplete="off">'+
+        'placeholder="'+esc(opts.placeholder||"例) 1000000 / 100万")+'" value="'+esc(disp)+'" autocomplete="off">'+
       '<input type="hidden" data-field="'+name+'" data-num="1" value="'+esc(value==null?"":value)+'">'+
     '</span>';
   if (opts.bare) return inner;
   return '<label class="field"><span class="field__label">'+esc(label)+'</span>'+inner+
-    (opts.hint===false?'':'<span class="field__hint">'+(opts.hint||"「680万」「1.2億」でも可")+'</span>')+'</label>';
+    (opts.hint===false?'':'<span class="field__hint">'+(opts.hint||"「100万」「1.2億」でも可")+'</span>')+'</label>';
 }
 function syncMoneyField(wrap){
   var vis = wrap.querySelector(".moneyin");
@@ -2971,13 +2992,72 @@ function requireOthers(root){
 }
 function fieldInput(label, name, value, opts){
   opts = opts || {};
-  return '<label class="field"><span class="field__label">'+esc(label)+(opts.required?'<span class="req">*</span>':'')+'</span>'+
-    '<input class="input" data-field="'+name+'" type="'+(opts.type||"text")+'" '+
+  var inputHTML = '<input class="input" data-field="'+name+'" type="'+(opts.type||"text")+'" '+
     (opts.inputmode?'inputmode="'+opts.inputmode+'" ':'')+
     (opts.placeholder?'placeholder="'+esc(opts.placeholder)+'" ':'')+
     (opts.type==="number"?'step="'+(opts.step||"any")+'" ':(opts.step?'step="'+opts.step+'" ':''))+
-    'value="'+esc(value===null||value===undefined?"":value)+'" />'+
+    'value="'+esc(value===null||value===undefined?"":value)+'" />';
+  if (opts.paste) inputHTML = '<div class="field__row">'+inputHTML+'<button type="button" class="pastebtn" data-paste="'+name+'" title="クリップボードから貼り付け">'+icon("clipboard")+'</button></div>';
+  return '<label class="field"><span class="field__label">'+esc(label)+(opts.required?'<span class="req">*</span>':'')+'</span>'+
+    inputHTML+
     (opts.hint?'<span class="field__hint">'+esc(opts.hint)+'</span>':'')+'</label>';
+}
+// r148: data-paste ボタン共通ワイヤリング（クリップボードの文字を貼り付け）
+function wirePasteButtons(root){
+  root.querySelectorAll("[data-paste]").forEach(function(btn){
+    btn.onclick = function(){
+      var name = btn.getAttribute("data-paste");
+      var el = root.querySelector('[data-field="'+name+'"]');
+      if (!el || !navigator.clipboard || !navigator.clipboard.readText){ toast("このブラウザでは貼り付けできません"); return; }
+      navigator.clipboard.readText().then(function(text){
+        if (!text){ toast("クリップボードが空です"); return; }
+        el.value = text.trim();
+        el.dispatchEvent(new Event("input", {bubbles:true}));
+        el.dispatchEvent(new Event("change", {bubbles:true}));
+        toast("貼り付けました");
+      }).catch(function(){ toast("クリップボードを読み取れませんでした"); });
+    };
+  });
+}
+// r148: ドロップダウンの代わりに2択等のボタンで選ぶフィールド（新規登録フォーム用・data-seg）
+function segField(label, name, options){
+  return '<div class="field"><span class="field__label">'+esc(label)+'</span>'+
+    '<div class="segmented" data-seg="'+name+'" style="margin-top:6px">'+
+    options.map(function(o){ return '<button type="button" class="choice" data-val="'+esc(o)+'">'+esc(o)+'</button>'; }).join("")+
+    '</div></div>';
+}
+// r148: ドロップダウンの代わりにボタンで選ぶフィールド（案件詳細の編集フォーム用・data-field の自動保存と連動）
+function fieldSegment(label, name, options, value, opts){
+  opts = opts || {};
+  return '<div class="field"><span class="field__label">'+esc(label)+'</span>'+
+    '<div class="segmented" data-fieldseg="'+name+'" style="margin-top:6px">'+
+    options.map(function(o){ return '<button type="button" class="choice'+(String(value)===String(o)?" is-on":"")+'" data-val="'+esc(o)+'">'+esc(o)+'</button>'; }).join("")+
+    '</div>'+
+    '<input type="hidden" data-field="'+name+'" value="'+esc(value||"")+'" />'+
+    (opts.hint?'<span class="field__hint">'+esc(opts.hint)+'</span>':'')+
+  '</div>';
+}
+// r148b: ボタン選択＋「その他」の時だけテキスト欄（fieldSelectWithOtherのボタン版）
+function fieldSegmentWithOther(label, name, options, value, otherName, otherValue, opts){
+  opts = opts || {};
+  var showOther = value === "その他";
+  var ph = opts.otherPlaceholder || "その他の内容を入力（必須）";
+  return fieldSegment(label, name, options, value, opts)+
+    '<div class="field col-span other-wrap" data-other-select="'+name+'" id="'+otherName+'_wrap" style="display:'+(showOther?"":"none")+'">'+
+      '<span class="field__label">その他の内容<span class="req">*</span></span>'+
+      '<input class="input" data-field="'+otherName+'" type="text" placeholder="'+esc(ph)+'" value="'+esc(otherValue||"")+'" />'+
+    '</div>';
+}
+function wireFieldSegments(root){
+  root.querySelectorAll('[data-fieldseg] .choice').forEach(function(b){
+    b.onclick = function(){
+      var grp = b.parentElement;
+      grp.querySelectorAll(".choice").forEach(function(x){ x.classList.remove("is-on"); });
+      b.classList.add("is-on");
+      var hidden = grp.parentElement.querySelector('input[data-field="'+grp.getAttribute("data-fieldseg")+'"]');
+      if (hidden){ hidden.value = b.getAttribute("data-val"); hidden.dispatchEvent(new Event("change", {bubbles:true})); }
+    };
+  });
 }
 function fieldTextarea(label, name, value, opts){
   opts = opts || {};
@@ -2993,10 +3073,8 @@ var routes = [
   { re:/^\/deals$/,            view:function(){ return ViewDeals(); } },
   { re:/^\/deals\/new$/,       view:function(){ return ViewDealNew(); } },
   { re:/^\/deals\/([^/]+)$/,   view:function(m){ return ViewDealDetail(m[1]); } },
-  { re:/^\/follow-ups$/,       view:function(){ return ViewFollowUps(); } },
   { re:/^\/profit$/,           view:function(){ return ViewProfit(); } },
   { re:/^\/cashflow$/,         view:function(){ return ViewCashflow(); } },
-  { re:/^\/simulation$/,       view:function(){ return ViewSimulation(); } },
   // r64: 単価マスタは廃止（案件ごとの単価表に移行）。ViewUnitPrices 自体は残置（未使用）
   { re:/^\/analytics$/,        view:function(){ return ViewAnalytics(); } },
   { re:/^\/settings$/,         view:function(){ return ViewSettings(); } }
@@ -3128,8 +3206,8 @@ function updateNav(path){
    VIEW: Dashboard
    ============================================================ */
 // 累計の推移を表す小さい折れ線チャート（資産価値レポート風のヒーロー数値カード用）
-function miniTrendSVG(values){
-  var w = 320, h = 56, padX = 6, padTop = 15, padBottom = 13;
+function miniTrendSVG(values, monthLabels){
+  var w = 320, h = monthLabels ? 68 : 56, padX = 10, padTop = 15, padBottom = monthLabels ? 24 : 13;
   var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
   if (min === max){ min -= 1; max += 1; }
   var n = values.length;
@@ -3154,6 +3232,15 @@ function miniTrendSVG(values){
     var anchor = i===0 ? "start" : (i===n-1 ? "end" : "middle");
     return '<text x="'+p[0].toFixed(1)+'" y="'+(p[1]-6).toFixed(1)+'" font-size="8.5" font-weight="700" fill="var(--text-2)" text-anchor="'+anchor+'">'+esc(yenMan(values[i]))+'</text>';
   }).join("");
+  // r148: 月ラベルを全ポイント分、グラフ下部に細かく表示
+  var monthRow = "";
+  if (monthLabels){
+    monthRow = pts.map(function(p,i){
+      var anchor = i===0 ? "start" : (i===n-1 ? "end" : "middle");
+      var isLast = i === n-1;
+      return '<text x="'+p[0].toFixed(1)+'" y="'+(h-4)+'" font-size="8" font-weight="'+(isLast?"800":"600")+'" fill="'+(isLast?"var(--primary)":"var(--muted)")+'" text-anchor="'+anchor+'">'+esc(monthLabels[i])+'</text>';
+    }).join("");
+  }
   return '<svg viewBox="0 0 '+w+' '+h+'" width="100%" height="'+h+'" preserveAspectRatio="none" style="display:block;overflow:visible">'+
     '<defs><linearGradient id="heroFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--success)" stop-opacity="0.25"/><stop offset="100%" stop-color="var(--success)" stop-opacity="0"/></linearGradient></defs>'+
     grid+
@@ -3161,6 +3248,7 @@ function miniTrendSVG(values){
     '<path d="'+line+'" fill="none" stroke="var(--success)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'+
     dots+
     labels+
+    monthRow+
   '</svg>';
 }
 // 確定利益の累計をヒーロー表示するカード（資産価値レポート風・独自デザイン）
@@ -3168,8 +3256,9 @@ function heroReportHTML(){
   var allK = Calc.kpis("all");
   if (allK.confProfit === null){
     return '<div class="card hero-report" style="margin-bottom:8px">'+
-      '<div class="hero-report__label">確定利益（累計）</div>'+
-      '<p class="muted" style="font-size:13px;margin-top:8px">まだ成約がありません。成約すると、ここに累計利益の推移が出ます。</p>'+
+      '<div class="hero-report__label">見込利益（進行中）</div>'+
+      '<div class="hero-report__value tnum" title="'+esc(yen(allK.estProfit))+'">'+esc(yenMan(allK.estProfit))+'</div>'+
+      '<p class="muted" style="font-size:11px;margin-top:8px">まだ成約がありません。成約すると、ここに確定利益の累計・推移も表示されます。</p>'+
     '</div>';
   }
   var totalConf = allK.confProfit;
@@ -3188,8 +3277,7 @@ function heroReportHTML(){
     '<div class="hero-report__label">確定利益 合計（累計）</div>'+
     '<div class="hero-report__value tnum" title="'+esc(yen(totalConf))+'">'+esc(yenMan(totalConf))+'</div>'+
     '<div class="hero-report__delta '+deltaCls+'">'+deltaArrow+' '+esc(deltaText)+'</div>'+
-    '<div class="hero-report__chart">'+miniTrendSVG(cumSeries)+
-      '<div class="row row--between" style="margin-top:2px"><span class="hero-report__axis">'+esc(months6[0].label)+'</span><span class="hero-report__axis">'+esc(thisMonth.label)+(thisMonth.isCurrent?"（今月）":"")+'</span></div>'+
+    '<div class="hero-report__chart">'+miniTrendSVG(cumSeries, months6.map(function(m){ return m.label+(m.isCurrent?"（今月）":""); }))+
     '</div>'+
     '<div class="hero-report__sub">'+
       '<div class="stat-ic"><span class="stat-ic__badge">'+icon("yen")+'</span><div><span class="k">見込利益</span><span class="v" title="'+esc(yen(allK.estProfit))+'">'+esc(yenMan(allK.estProfit))+'</span></div></div>'+
@@ -3293,7 +3381,7 @@ function ViewDashboard(){
 
   // 優先して対応する案件（今日対応 / 今後対応 で分ける）
   html += '<div class="grid" style="grid-template-columns:1fr;margin-bottom:16px">';
-  html += '<div class="card"><div class="card__head"><div class="card__title">優先して対応する案件</div>'+
+  html += '<div class="card"><div class="card__head"><div class="card__title">案件</div>'+
     '<button type="button" class="card__link" data-goto-view="/deals">案件一覧 '+icon("arrow-right")+'</button></div>';
   function prioRow(d, showFu){
     var pr = Calc.profit(d);
@@ -3453,8 +3541,6 @@ function ViewDeals(){
     filtered.forEach(function(d){
       var pr = Calc.profit(d);
       var overdue = d.next_follow_on && d.next_follow_on < isoToday() && Calc.isActive(d) && !d.awaiting_reply && !d.no_followup;
-      var stale = Calc.isActive(d) ? lastContactDays(d) : null;
-      var staleB = (stale !== null && stale >= 10) ? ' <span class="badge '+(stale>=21?'pr-high':'pr-mid')+'" title="最終接触からの日数">放置'+stale+'日</span>' : '';
       var pbkRow = Calc.priorityBucket(d);
       html += '<tr class="clickable'+(d.favorite?' is-fav':'')+(pbkRow?' row-pr--'+pbkRow:'')+'" data-goto="'+d.id+'">'+
         '<td><div style="display:flex;gap:8px;align-items:flex-start">'+
@@ -3463,7 +3549,7 @@ function ViewDeals(){
             '<div class="muted" style="font-size:12px">'+esc(d.contact_name||"")+' ・ 登録 '+fmtDate(d.created_on)+'</div>'+
             '<div class="row" style="gap:6px">'+telChip(d)+filesChip(d)+'</div></div>'+
         '</div></td>'+
-        '<td>'+statusBadge(d.status)+staleB+'</td>'+
+        '<td>'+statusBadge(d.status)+'</td>'+
         '<td>'+probBadge(d.probability)+'</td>'+
         '<td class="num" title="'+yen(d.amount_presented)+'">'+yenMan(d.amount_presented)+'</td>'+
         '<td class="num" title="'+yen(pr.profit)+'">'+yenMan(pr.profit)+'</td>'+
@@ -3478,8 +3564,6 @@ function ViewDeals(){
     filtered.forEach(function(d){
       var pr = Calc.profit(d);
       var overdue = d.next_follow_on && d.next_follow_on < isoToday() && Calc.isActive(d) && !d.awaiting_reply && !d.no_followup;
-      var stale = Calc.isActive(d) ? lastContactDays(d) : null;
-      var staleB = (stale !== null && stale >= 10) ? '<span class="badge '+(stale>=21?'pr-high':'pr-mid')+'">放置'+stale+'日</span>' : '';
       var pbk = Calc.priorityBucket(d);
       html += '<div class="deal-card'+(d.favorite?' is-fav':'')+(pbk?' deal-card--'+pbk:'')+'" data-goto="'+d.id+'">'+
         '<div class="deal-card__top">'+
@@ -3489,7 +3573,7 @@ function ViewDeals(){
             '<button type="button" class="favstar favstar--sm'+(d.favorite?' is-on':'')+'" data-fav="'+d.id+'" title="お気に入り" aria-pressed="'+(d.favorite?"true":"false")+'">'+icon("star")+'</button>'+
           '</div>'+
         '</div>'+
-        '<div class="deal-card__row" style="justify-content:flex-start;flex-wrap:wrap;gap:5px">'+statusBadge(d.status)+(prioBadge(Calc.priorityBucket(d))||"")+staleB+telChip(d)+filesChip(d)+'</div>'+
+        '<div class="deal-card__row" style="justify-content:flex-start;flex-wrap:wrap;gap:5px">'+statusBadge(d.status)+(prioBadge(Calc.priorityBucket(d))||"")+telChip(d)+filesChip(d)+'</div>'+
         '<div class="deal-card__row">'+
           '<span class="muted">提示 '+yenMan(d.amount_presented)+'</span>'+
           '<span class="deal-card__amt">利益 '+yenMan(pr.profit)+'</span>'+
@@ -3680,6 +3764,26 @@ function peSelect(label,name,options,value){
     '<select class="select" data-pe="'+name+'"><option value="">選択</option>';
   options.forEach(function(o){ h+='<option'+(String(value)===String(o)?" selected":"")+'>'+esc(o)+'</option>'; });
   return h+'</select></label>';
+}
+// r148: ドロップダウンの代わりにボタンで選ぶ版（data-pe の隠しinputに値を持たせる）
+function peSegment(label,name,options,value){
+  return '<div class="field"><span class="field__label">'+esc(label)+'</span>'+
+    '<div class="segmented" data-peseg="'+name+'" style="margin-top:6px">'+
+    options.map(function(o){ return '<button type="button" class="choice'+(String(value)===String(o)?" is-on":"")+'" data-val="'+esc(o)+'">'+esc(o)+'</button>'; }).join("")+
+    '</div>'+
+    '<input type="hidden" data-pe="'+name+'" value="'+esc(value==null?"":value)+'" />'+
+  '</div>';
+}
+function wirePeSegments(root){
+  root.querySelectorAll('[data-peseg] .choice').forEach(function(b){
+    b.onclick = function(){
+      var grp = b.parentElement;
+      grp.querySelectorAll('.choice').forEach(function(x){ x.classList.remove("is-on"); });
+      b.classList.add("is-on");
+      var hidden = grp.parentElement.querySelector('input[data-pe="'+grp.getAttribute("data-peseg")+'"]');
+      if (hidden){ hidden.value = b.getAttribute("data-val"); hidden.dispatchEvent(new Event("change", {bubbles:true})); }
+    };
+  });
 }
 /* ---- 物件情報テキストの解析（コピペ → 数値抽出） --------------------- */
 function z2h(s){
@@ -3966,8 +4070,8 @@ function preFieldsHTML(pre){
     '<div class="form-grid-2">'+
       peInput("土地の広さ（坪）","land_tsubo",pre.land_tsubo,{inputmode:"decimal",placeholder:"坪→ 41.5 ／ 平米→ 137㎡",hint:"平米は「137㎡」と単位つきで → 自動で坪に換算"})+
       peInput("建坪（坪）","build_tsubo",pre.build_tsubo,{inputmode:"decimal",placeholder:"坪→ 30 ／ 平米→ 99㎡",hint:"平米は「99㎡」と単位つきで → 自動で坪に換算"})+
-      peSelect("構造","structure",STRUCTURES,pre.structure)+
-      peInput("階数","floors",pre.floors,{type:"number",inputmode:"numeric"})+
+      peSegment("構造","structure",["木造","RC造","SRC造"],pre.structure)+
+      peSegment("階数","floors",["1","2","3","4"],pre.floors)+
       '<div class="col-span field"><span class="field__label">メモ</span>'+
         '<textarea class="input" data-pe="memo" placeholder="例：角地・前面道路が狭い・隣家が近い・残置物多め など">'+esc(pre.memo||"")+'</textarea></div>'+
     '</div>';
@@ -4037,14 +4141,14 @@ function basicInfoCardHTML(deal){
       '<div class="form-grid">'+
         fieldInput("会社名","company_name",deal.company_name)+
         fieldInput("担当者名","contact_name",deal.contact_name)+
-        fieldInput("電話番号","phone",deal.phone,{type:"tel"})+
+        fieldInput("電話番号","phone",deal.phone,{type:"tel",paste:true})+
         fieldInput("メール","email",deal.email,{type:"email"})+
-        fieldSelectWithOther("発見経路","source",SOURCES,deal.source,"source_other",deal.source_other)+
-        fieldSelect("引き渡し方法","handover",["更地渡し","現況渡し"],deal.handover,{blank:"未選択"})+
-        fieldSelect("取引態様","torihiki",["専任媒介","一般媒介"],deal.torihiki,{blank:"未選択"})+
-        moneyField("物件価格","property_price",deal.property_price,{hint:"売出価格。「680万」「1.2億」でも可"})+
-        '<div class="col-span">'+fieldInput("現場住所","site_address",deal.site_address)+'</div>'+
-        '<div class="col-span">'+fieldInput("物件ページURL（メモ）","listing_url",deal.listing_url,{type:"url",inputmode:"url",placeholder:"https://..."})+'</div>'+
+        fieldSegmentWithOther("発見経路","source",SOURCES,deal.source,"source_other",deal.source_other)+
+        fieldSegment("引き渡し方法","handover",["更地渡し","現況渡し"],deal.handover)+
+        fieldSegment("取引態様","torihiki",["専任媒介","一般媒介"],deal.torihiki)+
+        moneyField("物件価格","property_price",deal.property_price,{hint:"売出価格。「100万」「1.2億」でも可"})+
+        fieldInput("現場住所","site_address",deal.site_address,{paste:true})+
+        fieldInput("物件ページURL（メモ）","listing_url",deal.listing_url,{type:"url",inputmode:"url",placeholder:"https://...",paste:true})+
         '<div class="col-span">'+fieldTextarea("メモ","memo",deal.memo)+'</div>'+
       '</div>'+
       '<div class="row" style="margin-top:14px"><button type="button" class="btn btn--primary btn--sm" data-act="done-basic">'+icon("check")+'編集を終える</button></div>'+
@@ -4230,7 +4334,7 @@ function payTotals(deal){
 function makeStdPayPlan(deal){
   var today = isoToday();
   var rev = num(deal.amount_presented);
-  var cost = (num(deal.cost_construction) || 0) + (num(deal.cost_other) || 0);
+  var cost = (num(deal.cost_construction) || 0) + Calc.extraCostTotal(deal);
   var start = deal.won_on || today;
   var demo = deal.demo_date || isoAddDays(today, 30);
   var first = rev != null ? Math.round(rev * 0.3 / 10000) * 10000 : null;
@@ -4240,6 +4344,71 @@ function makeStdPayPlan(deal){
     { id:uid(), dir:"in",  label:"完了金（残り）", amount:(rev != null && first != null) ? (rev - first * 2) : null, due:isoAddDays(demo, 7), done:false, done_on:null },
     { id:uid(), dir:"out", label:"協力会社への支払", amount:cost > 0 ? cost : null,      due:isoAddDays(demo, 35),  done:false, done_on:null }
   ];
+}
+// r148: 「その他原価」の単一欄を廃止し、後から出た費用を都度追加できるリストに（入金・支払の予定と同じ操作感）
+function extraCostsHTML(deal){
+  var items = (deal.extra_costs || []).slice();
+  var legacy = num(deal.cost_other) || 0;
+  var sum = Calc.extraCostTotal(deal);
+  var rows = items.map(function(it){
+    var v = num(it.amount);
+    return '<button type="button" class="payrow" data-ec-edit="'+esc(it.id)+'">'+
+      '<span class="payrow__body"><span class="payrow__label">'+esc(it.label || "（内容なし）")+'</span></span>'+
+      '<span class="payrow__amt" style="color:var(--text)">'+(v!=null ? yen(v) : "—")+'</span>'+
+    '</button>';
+  }).join("");
+  return '<div class="field" style="margin-top:4px">'+
+    '<div class="row row--between" style="align-items:center"><span class="field__label" style="margin:0">追加費用（別途請求ぶん）</span>'+
+      (sum ? '<span class="muted" style="font-size:12.5px">合計 '+yen(sum)+'</span>' : '')+
+    '</div>'+
+    (items.length ? '<div class="paylist" style="margin-top:8px">'+rows+'</div>' : '<div class="field__hint" style="margin-top:4px">あとから出た費用（処分費の追加など）が分かり次第、ここに追加してください。自社・外注どちらの利益からも差引きます。</div>')+
+    (legacy ? '<div class="field__hint" style="margin-top:6px">旧データ分 '+yen(legacy)+' を含みます。</div>' : '')+
+    '<button type="button" class="btn btn--soft btn--sm" data-ec-add="1" style="margin-top:8px">'+icon("plus")+'追加費用を入れる</button>'+
+  '</div>';
+}
+function openExtraCostDialog(dealId, itemId){
+  var deal = DB.deal(dealId); if (!deal) return;
+  var items = (deal.extra_costs || []).slice();
+  var editing = null;
+  items.forEach(function(it){ if (it.id === itemId) editing = it; });
+  var cur = editing || { label:"", amount:null };
+  openDialog({
+    title: editing ? "追加費用を編集" : "追加費用を追加",
+    confirmLabel: "保存",
+    body:
+      '<div class="stack">'+
+        fieldInput("内容","ec_label",cur.label,{placeholder:"例：追加の処分費・アスベスト調査費 など"})+
+        moneyField("金額","ec_amount",cur.amount)+
+        (editing ? '<button type="button" class="btn btn--danger-soft btn--sm" data-ec="del" style="margin-top:8px">この追加費用を削除</button>' : '')+
+    '</div>',
+    onMount:function(body){
+      wireMoneyFields(body);
+      var delBtn = body.querySelector('[data-ec="del"]');
+      if (delBtn) delBtn.onclick = function(){
+        DB.updateDeal(dealId, { extra_costs: items.filter(function(it){ return it.id !== itemId; }) });
+        var bd = document.getElementById("backdrop"); bd.classList.remove("is-open"); bd.innerHTML = "";
+        toast("削除しました"); render();
+      };
+    },
+    onConfirm:function(body){
+      var label = (body.querySelector('[data-field="ec_label"]') || {}).value || "";
+      var amount = num((body.querySelector('[data-field="ec_amount"]') || {}).value);
+      if (!label && amount == null){ toast("内容か金額を入れてください"); return true; }
+      var rec = { id: itemId || uid(), label: label, amount: amount };
+      var next = editing
+        ? items.map(function(it){ return it.id === itemId ? rec : it; })
+        : items.concat([rec]);
+      DB.updateDeal(dealId, { extra_costs: next });
+      toast("保存しました"); render();
+    }
+  });
+}
+function wireExtraCosts(root, id){
+  root.querySelectorAll('[data-ec-edit]').forEach(function(b){
+    b.onclick = function(){ openExtraCostDialog(id, b.getAttribute("data-ec-edit")); };
+  });
+  var addB = root.querySelector('[data-ec-add]');
+  if (addB) addB.onclick = function(){ openExtraCostDialog(id, null); };
 }
 function payPlanCardHTML(deal){
   var items = payItems(deal);
@@ -4390,7 +4559,8 @@ function cashflowBuild(monthsAhead){
 }
 function ViewCashflow(){
   var s = DB.settings();
-  var start = num(s.cash_on_hand);
+  var hasCash = num(s.cash_bank)!==null || num(s.cash_wallet)!==null || num(s.cash_on_hand)!==null;
+  var start = hasCash ? (num(s.cash_bank)||0) + (num(s.cash_wallet)||0) + (num(s.cash_on_hand)||0) : null;
   var cf = cashflowBuild(8);
   var hasAny = cf.overdue.length || cf.later.items.length || cf.months.some(function(x){ return x.items.length; });
 
@@ -4400,11 +4570,13 @@ function ViewCashflow(){
   var html =
     '<div class="page-head only-desktop"><div><h1>資金繰り</h1><p>案件ごとの「入金・支払の予定」から、月ごとの残高見込みを出します。</p></div></div>';
 
-  // 今の現金
-  html += '<div class="card"><div class="section-label">今の現金（起点）</div>'+
-    '<div class="form-grid">'+
-      moneyField("通帳・財布の残高","cash_on_hand",s.cash_on_hand,{hint:"ここを起点に先の月末残高を計算します"})+
-      dateField("その残高の基準日","cash_on_hand_on",s.cash_on_hand_on || "",{hint:"だいたいでOK（今日でも可）"})+
+  // 今の現金（r148: 通帳／現金を分けて詳しく入力できるように・コンパクトに2列）
+  html += '<div class="card" style="padding:11px"><div class="section-label" style="margin-bottom:6px">今の現金（起点）</div>'+
+    (start!=null ? '<div class="field__hint" style="margin-bottom:6px">合計 <b style="color:var(--text)">'+esc(yen(start))+'</b></div>' : '')+
+    '<div class="form-grid-2" style="gap:9px">'+
+      moneyField("通帳の残高","cash_bank",s.cash_bank,{hint:false})+
+      moneyField("手元の現金（財布）","cash_wallet",s.cash_wallet,{hint:false})+
+      '<div class="col-span">'+dateField("残高の基準日","cash_on_hand_on",s.cash_on_hand_on || "",{hint:"だいたいでOK（今日でも可）"})+'</div>'+
     '</div></div>';
 
   if (!hasAny){
@@ -4482,7 +4654,7 @@ function ViewCashflow(){
 function cashflowMount(root){
   wireMoneyFields(root);
   wireDateFields(root);
-  root.querySelectorAll('[data-field="cash_on_hand"],[data-field="cash_on_hand_on"]').forEach(function(el){
+  root.querySelectorAll('[data-field="cash_bank"],[data-field="cash_wallet"],[data-field="cash_on_hand_on"]').forEach(function(el){
     el.addEventListener("change", function(){
       var f = el.getAttribute("data-field");
       var patch = {};
@@ -4766,16 +4938,14 @@ function ViewDealNew(){
         '<div class="form-grid-2" style="gap:9px">'+
           fieldInput("会社名","company_name","",{required:true,placeholder:"例：山田不動産"})+
           fieldInput("担当者名","contact_name","",{placeholder:"例：山田 太郎"})+
-          fieldInput("電話番号","phone","",{type:"tel",inputmode:"tel",placeholder:"090-1234-5678"})+
+          fieldInput("電話番号","phone","",{type:"tel",inputmode:"tel",placeholder:"090-1234-5678",paste:true})+
           fieldInput("メール","email","",{type:"email",inputmode:"email"})+
-          fieldSelectWithOther("案件発見経路","source",SOURCES,"","source_other","",{hint:"あとで変更できます"})+
-          dateField("案件登録日","created_on",isoToday())+
-          fieldSelect("引き渡し方法","handover",["更地渡し","現況渡し"],"",{blank:"未選択"})+
-          fieldSelect("取引態様","torihiki",["専任媒介","一般媒介"],"",{blank:"未選択"})+
-          moneyField("物件価格","property_price","",{hint:"売出価格。「680万」「1.2億」でも可"})+
-          '<div></div>'+
-          '<div class="col-span">'+fieldInput("現場住所","site_address","",{placeholder:"例：東京都足立区千住1-2-3"})+'</div>'+
-          '<div class="col-span">'+fieldInput("物件ページURL（メモ）","listing_url","",{type:"url",inputmode:"url",placeholder:"例：https://suumo.jp/... ／ アットホームの物件ページなど",hint:"あとで見返す用。貼るだけでOK"})+'</div>'+
+          fieldSegmentWithOther("案件発見経路","source",SOURCES,"","source_other","",{hint:"あとで変更できます"})+
+          segField("引き渡し方法","handover",["更地渡し","現況渡し"])+
+          segField("取引態様","torihiki",["専任媒介","一般媒介"])+
+          moneyField("物件価格","property_price","",{hint:"売出価格。「100万」「1.2億」でも可"})+
+          fieldInput("現場住所","site_address","",{placeholder:"例：東京都足立区千住1-2-3",paste:true})+
+          fieldInput("物件ページURL（メモ）","listing_url","",{type:"url",inputmode:"url",placeholder:"例：https://suumo.jp/... ／ アットホームの物件ページなど",hint:"あとで見返す用。貼るだけでOK",paste:true})+
           '<div class="col-span">'+fieldTextarea("メモ","memo","",{placeholder:"自由記述は最小限に。"})+'</div>'+
         '</div>'+
       '</div>'+
@@ -4800,9 +4970,9 @@ function ViewDealNew(){
           moneyField("提示金額","amount_presented","",{hint:false})+
           moneyField("施工原価（自社でやる時）","cost_construction","",{hint:false})+
           moneyField("外注費（協力会社に払う額）","cost_outsource","",{hint:false})+
-          moneyField("その他原価","cost_other","",{hint:"諸経費・処分費など"})+
         '</div>'+
-        '<div class="field__hint" style="margin-top:2px">分かる範囲でOK（「680万」「1.2億」でも入力できます）。</div>'+
+        '<div class="field__hint" style="margin-top:6px">追加費用（別途請求ぶん）は、登録後に案件詳細から追加できます。</div>'+
+        '<div class="field__hint" style="margin-top:2px">分かる範囲でOK（「100万」「1.2億」でも入力できます）。</div>'+
         '<div class="divider"></div>'+
         '<div class="profit-hero">'+
           '<div class="profit-hero__label">見込利益</div>'+
@@ -4829,6 +4999,7 @@ function ViewDealNew(){
     back:function(){ history.back(); },
     mount:function(root){
       var prob = "C";
+      var handover = "", torihiki = "";
       var form    = root.querySelector("#newForm");
       var cnField = root.querySelector('[data-field="company_name"]');
       var errBox  = root.querySelector("#formError");
@@ -4846,15 +5017,14 @@ function ViewDealNew(){
         creating = true;
         var submitBtn = root.querySelector("#submitBtn");
         if (submitBtn){ submitBtn.classList.add("is-pressed"); submitBtn.disabled = true; }
-        // 登録した案件が追客リストから漏れないよう、次回追客日を自動で3日後にセット
-        var fd = new Date(); fd.setDate(fd.getDate() + 3);
+        // r148: 新規案件は最初から追客なし（no_followup）なので、次回追客日は空のままでOK
         var data = {
           company_name:v("company_name"), contact_name:v("contact_name"), phone:v("phone"),
           email:v("email"), source:v("source"), source_other:v("source_other"), site_address:v("site_address"), memo:v("memo"),
-          listing_url:v("listing_url"), handover:v("handover"), torihiki:v("torihiki"), property_price:num(v("property_price")),
+          listing_url:v("listing_url"), handover:handover, torihiki:torihiki, property_price:num(v("property_price")),
           created_on:v("created_on")||isoToday(), probability:prob,
-          next_follow_on: isoDate(fd), next_action: v("phone") ? "電話" : "メール",
-          amount_presented:num(v("amount_presented")), cost_construction:num(v("cost_construction")), cost_other:num(v("cost_other")), cost_outsource:num(v("cost_outsource"))
+          next_action: v("phone") ? "電話" : "メール",
+          amount_presented:num(v("amount_presented")), cost_construction:num(v("cost_construction")), cost_outsource:num(v("cost_outsource"))
         };
         var pre = null;
         try { pre = readPreFrom(root); } catch(e){}
@@ -4870,7 +5040,7 @@ function ViewDealNew(){
         var patch = {};
         if (pre) patch.pre = pre;
         if (Object.keys(patch).length){ try { DB.updateDeal(deal.id, patch); } catch(e){} }
-        toast("案件を登録しました（3日後に追客予定をセット）");
+        toast("案件を登録しました");
         setTimeout(function(){ navTo("/deals/" + deal.id); }, 160);
       }
 
@@ -4912,16 +5082,31 @@ function ViewDealNew(){
             b.classList.add("is-on"); prob = b.getAttribute("data-val");
           };
         });
+        root.querySelectorAll('[data-seg="handover"] .choice').forEach(function(b){
+          b.onclick = function(){
+            root.querySelectorAll('[data-seg="handover"] .choice').forEach(function(x){ x.classList.remove("is-on"); });
+            b.classList.add("is-on"); handover = b.getAttribute("data-val");
+          };
+        });
+        root.querySelectorAll('[data-seg="torihiki"] .choice').forEach(function(b){
+          b.onclick = function(){
+            root.querySelectorAll('[data-seg="torihiki"] .choice').forEach(function(x){ x.classList.remove("is-on"); });
+            b.classList.add("is-on"); torihiki = b.getAttribute("data-val");
+          };
+        });
+        wirePasteButtons(root);
+        wireFieldSegments(root);
         var pTog = root.querySelector("#preToggle"), pDisc = root.querySelector("#preDisc");
         if (pTog && pDisc) pTog.onclick = function(){ pDisc.classList.toggle("is-open"); };
         wirePreEstimateForm(root);
+        wirePeSegments(root);
         wireSourceOther(root);
         wireDateFields(root);
         wireMoneyFields(root);
 
         // 金額管理（自社 / 外注 の利益をその場で計算。案件はまだ無いのでDBには保存しない）
         function refreshProfit(){
-          var base = { amount_presented:num(v("amount_presented")), cost_construction:num(v("cost_construction")), cost_other:num(v("cost_other")), cost_outsource:num(v("cost_outsource")) };
+          var base = { amount_presented:num(v("amount_presented")), cost_construction:num(v("cost_construction")), cost_outsource:num(v("cost_outsource")) };
           var p2 = Calc.profit(base), pO2 = Calc.profitOutsource(base);
           var mp = root.querySelector("#mpProfit");
           if (mp){ mp.textContent = p2.profit===null ? "—" : yen(p2.profit); mp.style.color = (p2.profit!==null&&p2.profit<0)?"var(--danger)":"var(--text)"; }
@@ -4937,7 +5122,7 @@ function ViewDealNew(){
           var outBox = root.querySelector("#profit2OutBox");
           if (outBox) outBox.hidden = !hasOut;
         }
-        ["amount_presented","cost_construction","cost_other","cost_outsource"].forEach(function(n){
+        ["amount_presented","cost_construction","cost_outsource"].forEach(function(n){
           var el = root.querySelector('[data-field="'+n+'"]');
           if (el) el.addEventListener("change", refreshProfit);
         });
@@ -5087,8 +5272,8 @@ function ViewDealDetail(id){
       moneyField("提示金額","amount_presented",deal.amount_presented,{hint:false})+
       moneyField("施工原価（自社でやる時）","cost_construction",deal.cost_construction,{hint:false})+
       moneyField("外注費（協力会社に払う額）","cost_outsource",deal.cost_outsource,{hint:false})+
-      moneyField("その他原価","cost_other",deal.cost_other,{hint:"諸経費・処分費など。自社・外注どちらの利益からも差引き"})+
     '</div>'+
+    extraCostsHTML(deal)+
     '<div class="divider"></div>'+
     '<div class="profit-hero" id="profitHero">'+
       '<div class="profit-hero__label">見込利益</div>'+
@@ -5154,6 +5339,8 @@ function ViewDealDetail(id){
       wireSourceOther(root);
       wireDateFields(root);
       wireMoneyFields(root);
+      wireFieldSegments(root);
+      wirePasteButtons(root);
 
       // 進捗の履歴（折りたたみ）
       var tlDisc = root.querySelector("#tlDisc");
@@ -5163,6 +5350,7 @@ function ViewDealDetail(id){
       var preDisc = root.querySelector("#preDisc");
       if (preDisc) root.querySelector("#preToggle").onclick = function(){ preDisc.classList.toggle("is-open"); };
       wirePreEstimate(root, id);
+      wirePeSegments(root);
 
       // 金額管理（折りたたみ・r133）
       var moneyDisc = root.querySelector("#moneyDisc");
@@ -5170,6 +5358,7 @@ function ViewDealDetail(id){
       wireContactLog(root, id);
       wireFilesCard(root, id);
       wirePayPlanCard(root, id);
+      wireExtraCosts(root, id);
 
       // 基本情報: まとめ表示 ⇄ 編集
       var basicCard = root.querySelector("#basicCard");
@@ -5377,145 +5566,6 @@ function openAddlMemoDialog(dealId){
   });
 }
 
-/* ============================================================
-   VIEW: Follow-ups
-   ============================================================ */
-// 「対応した→次回設定」ダイアログ（追客管理・ダッシュボードから共用）
-function openFollowDoneDialog(did){
-  var d3 = new Date(); d3.setDate(d3.getDate() + 3);
-  openDialog({
-    title:"対応を記録して次回を設定", confirmLabel:"保存",
-    body:'<div class="stack">'+
-      '<div class="form-grid">'+
-        '<label class="field"><span class="field__label">今回の連絡</span><select class="select" data-field="donekind">'+
-          LOG_KINDS.filter(function(o){ return o.k !== "note"; }).map(function(o){
-            return '<option value="'+o.k+'"'+(o.k==="call"?" selected":"")+'>'+esc(o.label)+'</option>';
-          }).join("")+
-          '<option value="none">記録しない</option>'+
-        '</select></label>'+
-        fieldSelectWithOther("次回アクション","na",NEXT_ACTIONS,"電話","na_other","",{blank:false,otherPlaceholder:"具体的なアクションを入力（必須）"})+
-      '</div>'+
-      dateField("次回追客日","nf",isoDate(d3))+
-      '<div class="row" style="margin-top:2px">'+
-        '<button type="button" class="btn btn--soft btn--sm" data-nf-quick="1">明日</button>'+
-        '<button type="button" class="btn btn--soft btn--sm" data-nf-quick="3">3日後</button>'+
-        '<button type="button" class="btn btn--soft btn--sm" data-nf-quick="7">1週間後</button>'+
-      '</div>'+
-    '</div>',
-    onMount:function(body){
-      wireDateFields(body);
-      wireOther(body);
-      body.querySelectorAll("[data-nf-quick]").forEach(function(b){
-        b.onclick = function(){
-          var n = Number(b.getAttribute("data-nf-quick"));
-          var dd = new Date(); dd.setDate(dd.getDate() + n);
-          setDateField(body, "nf", isoDate(dd));
-        };
-      });
-    },
-    onConfirm:function(body){
-      if (requireOthers(body)) return true;
-      var dk = body.querySelector('[data-field="donekind"]').value;
-      if (dk && dk !== "none") DB.addLog(did, dk, "");
-      var na = body.querySelector('[data-field="na"]').value;
-      var naOther = (body.querySelector('[data-field="na_other"]') || {}).value || "";
-      DB.updateDeal(did, {
-        next_follow_on: body.querySelector('[data-field="nf"]').value,
-        next_action: na, next_action_other: na === "その他" ? naOther : ""
-      });
-      toast("記録して次回を設定しました"); render();
-    }
-  });
-}
-function ViewFollowUps(){
-  var b = Calc.followBuckets();
-  function itemHTML(d, overdue){
-    var pr = Calc.profit(d);
-    var od = overdue ? daysBetween(d.next_follow_on, isoToday()) : 0;
-    var tel = (d.phone||"").replace(/[^\d+]/g, "");
-    return '<div class="fu-item" data-goto="'+d.id+'">'+
-      '<div class="fu-item__co">'+esc(d.company_name||"（無名）")+(od>0?' <span class="badge pr-high">'+od+'日超過</span>':'')+'</div>'+
-      '<div class="fu-item__meta">'+statusBadge(d.status)+' '+probBadge(d.probability)+
-        ' <span>'+esc(d.next_action||"アクション未設定")+'</span>'+
-        ' <span>'+fmtDate(d.next_follow_on)+'</span>'+
-        ' <span>見込 '+yenMan(pr.profit)+'</span></div>'+
-      '<div class="fu-item__acts">'+
-        (tel ? '<a class="chipbtn" href="tel:'+esc(tel)+'">'+icon("phone")+'電話</a>' : '')+
-        '<button class="btn btn--sm btn--soft" data-done="'+d.id+'">対応した</button>'+
-        '<button class="btn btn--sm btn--ghost" data-snooze="'+d.id+'">+3日</button>'+
-        '<button class="btn btn--sm btn--ghost" data-await-on="'+d.id+'">折り返し待ち</button>'+
-      '</div>'+
-    '</div>';
-  }
-  function col(title, list, mod){
-    var isOverdue = mod === "fu-col--overdue";
-    return '<div class="card fu-col '+(mod||"")+'"><div class="fu-col__head"><h3>'+esc(title)+'</h3>'+
-      '<span class="badge '+(isOverdue?"pr-high":"")+'">'+list.length+'</span></div>'+
-      (list.length ? list.map(function(d){ return itemHTML(d, isOverdue); }).join("") : '<div class="muted" style="font-size:13px;padding:8px 2px">なし</div>')+
-    '</div>';
-  }
-
-  var html =
-    '<div class="page-head only-desktop"><div><h1>追客管理</h1><p>期限超過を最優先で。対応したらその場で次回を設定。</p></div></div>';
-
-  if (!b.overdue.length && !b.today.length && !b.upcoming.length && !b.waiting.length){
-    html += '<div class="card"><div class="empty">'+icon("bell")+'<h3>追客予定はありません</h3>'+
-      '<p>案件詳細で「次回追客日」を設定すると、ここに並びます。</p></div></div>';
-  } else {
-    html += '<div class="fu-cols">'+
-      col("期限超過", b.overdue, "fu-col--overdue")+
-      col("今日", b.today)+
-      col("今後", b.upcoming)+
-    '</div>';
-    if (b.waiting.length){
-      html += '<div class="section-label" style="margin-top:16px">折り返し待ち（'+b.waiting.length+'）</div>'+
-        '<div class="lostlist">'+
-          b.waiting.map(function(d){
-            return '<div class="lostrow" data-goto="'+d.id+'">'+
-              '<span class="lostrow__co">'+esc(d.company_name||"（無名）")+'</span>'+
-              '<span class="lostrow__meta">'+statusMeta(d.status).label+
-                ' <button type="button" class="btn btn--ghost btn--sm" data-unwait="'+d.id+'" style="margin-left:8px">待ち解除</button></span>'+
-            '</div>';
-          }).join("")+
-        '</div>';
-    }
-  }
-
-  return {
-    title:"追客管理",
-    html:html,
-    mount:function(root){
-      root.querySelectorAll("[data-goto]").forEach(function(el){
-        el.onclick = function(e){ if (e.target.closest("button, a")) return; navTo("/deals/"+el.getAttribute("data-goto")); };
-      });
-      root.querySelectorAll("[data-done]").forEach(function(bd){
-        bd.onclick = function(){ openFollowDoneDialog(bd.getAttribute("data-done")); };
-      });
-      root.querySelectorAll("[data-snooze]").forEach(function(bs){
-        bs.onclick = function(){
-          var did = bs.getAttribute("data-snooze");
-          var d0 = DB.deal(did);
-          var base = d0.next_follow_on ? new Date(d0.next_follow_on) : new Date();
-          base.setDate(base.getDate()+3);
-          DB.updateDeal(did, { next_follow_on: isoDate(base) });
-          toast("3日後に延期しました"); render();
-        };
-      });
-      root.querySelectorAll("[data-await-on]").forEach(function(ba){
-        ba.onclick = function(){
-          DB.updateDeal(ba.getAttribute("data-await-on"), { awaiting_reply: true });
-          toast("折り返し待ちにしました"); render();
-        };
-      });
-      root.querySelectorAll("[data-unwait]").forEach(function(bu){
-        bu.onclick = function(){
-          DB.updateDeal(bu.getAttribute("data-unwait"), { awaiting_reply: false });
-          toast("折り返し待ちを解除しました"); render();
-        };
-      });
-    }
-  };
-}
 
 /* ============================================================
    VIEW: Profit management
@@ -5587,12 +5637,12 @@ function ViewProfit(){
       var p = Calc.profit(d);
       if (num(d.amount_presented)!==null) sumP += num(d.amount_presented);
       if (num(d.cost_construction)!==null) sumC += num(d.cost_construction);
-      if (num(d.cost_other)!==null) sumO += num(d.cost_other);
+      sumO += Calc.extraCostTotal(d);
       if (p.profit!==null){ sumPr += p.profit; anyPr = true; }
     });
     html += '<div class="table-wrap only-desktop"><table class="table"><thead><tr>'+
       '<th>会社名</th><th>ステータス</th><th class="num">提示金額</th><th class="num">施工原価</th>'+
-      '<th class="num">その他原価</th><th class="num">見込利益</th><th class="num">利益率</th></tr></thead><tbody>';
+      '<th class="num">追加費用</th><th class="num">見込利益</th><th class="num">利益率</th></tr></thead><tbody>';
     list.forEach(function(d){
       var p = Calc.profit(d);
       html += '<tr class="clickable" data-goto="'+d.id+'">'+
@@ -5600,7 +5650,7 @@ function ViewProfit(){
         '<td>'+statusBadge(d.status)+'</td>'+
         '<td class="num">'+yen(d.amount_presented)+'</td>'+
         '<td class="num">'+yen(d.cost_construction)+'</td>'+
-        '<td class="num">'+yen(d.cost_other)+'</td>'+
+        '<td class="num">'+yen(Calc.extraCostTotal(d))+'</td>'+
         '<td class="num" style="font-weight:800;color:'+rateColor(p.rate,p.profit)+'">'+yen(p.profit)+'</td>'+
         '<td class="num" style="font-weight:700;color:'+rateColor(p.rate,p.profit)+'">'+pct(p.rate,1)+'</td>'+
       '</tr>';
@@ -5615,7 +5665,7 @@ function ViewProfit(){
     html += '<div class="deal-cards only-mobile">';
     list.forEach(function(d){
       var p = Calc.profit(d);
-      var cost = (num(d.cost_construction)||0)+(num(d.cost_other)||0);
+      var cost = (num(d.cost_construction)||0)+Calc.extraCostTotal(d);
       html += '<div class="deal-card" data-goto="'+d.id+'">'+
         '<div class="deal-card__top"><div class="deal-card__co">'+esc(d.company_name||"（無名）")+'</div>'+statusBadge(d.status)+'</div>'+
         '<div class="deal-card__row"><span class="muted">提示 '+yenMan(d.amount_presented)+'</span><span class="muted">原価 '+yenMan(cost)+'</span></div>'+
@@ -5631,121 +5681,6 @@ function ViewProfit(){
     mount:function(root){
       root.querySelectorAll("[data-pf]").forEach(function(b){ b.onclick=function(){ profitFilter=b.getAttribute("data-pf"); render(); }; });
       root.querySelectorAll("[data-goto]").forEach(function(el){ el.onclick=function(){ navTo("/deals/"+el.getAttribute("data-goto")); }; });
-    }
-  };
-}
-
-/* ============================================================
-   VIEW: Simulation
-   ============================================================ */
-var simState = { deals: 4, profit: 200000 };
-var simLand = { area:"", coverage:"", floors:2, structure:"木造" };
-function ViewSimulation(){
-  function calc(n){ var m = n * simState.profit; return { m:m, y:m*12 }; }
-  var cur = calc(simState.deals);
-  var rows = [2,4,6,8].map(function(n){ return { n:n, r:calc(n) }; });
-
-  // 土地面積（＋建ぺい率・容積率・階数・構造）から延床と解体費のざっくりを出す
-  function landCalc(){
-    var tsubo = areaToTsuboInput(simLand.area);
-    if (!tsubo || tsubo <= 0) return null;
-    var cov = num(simLand.coverage);
-    var fl = num(simLand.floors) || 2;
-    var st = simLand.structure || "木造";
-    var fa = Calc.predictFloorArea({ land_tsubo:tsubo, floors:fl, structure:st, age_band:"unknown" });
-    var u = Calc.unitPriceFor(st);
-    return {
-      tsubo:tsubo, st:st, unit:u.price, unitFallback:u.fallback,
-      footprint: cov ? tsubo * (cov / 100) : null,
-      fa: fa,
-      demoLow:  fa ? Math.round(fa.low  * u.price * 1.15) : null,
-      demoMid:  fa ? Math.round(fa.mid  * u.price * 1.30) : null,
-      demoHigh: fa ? Math.round(fa.high * u.price * 1.50) : null
-    };
-  }
-  function landResultHTML(){
-    var c = landCalc();
-    if (!c) return '<div class="muted" style="font-size:13px">土地面積を入れると、1階の目安・予測延床・解体費のざっくりが出ます。</div>';
-    var h = '<div class="row" style="gap:26px;flex-wrap:wrap">';
-    if (c.footprint != null)
-      h += '<div><div class="stat__label">建築面積（1階の目安）</div><div class="tnum" style="font-size:20px;font-weight:800">'+Math.round(c.footprint)+' 坪</div></div>';
-    if (c.fa)
-      h += '<div><div class="stat__label">予測 延床</div><div class="tnum" style="font-size:20px;font-weight:800">'+Math.round(c.fa.low)+'〜'+Math.round(c.fa.high)+' 坪 <span class="muted" style="font-size:12px">中心 '+Math.round(c.fa.mid)+'</span></div></div>';
-    h += '</div>';
-    if (c.demoMid != null)
-      h += '<div class="divider"></div>'+
-        '<div><div class="stat__label">解体費（ざっくり・'+esc(c.st)+' '+NF.format(c.unit)+'円/坪 ×延床＋諸経費）</div>'+
-        '<div class="tnum" style="font-size:21px;font-weight:800;color:var(--primary)">'+yen(c.demoMid)+'</div>'+
-        '<div class="stat__delta">幅 '+yen(c.demoLow)+' 〜 '+yen(c.demoHigh)+'</div></div>';
-    h += '<div class="field__hint" style="margin-top:10px">あくまで概算の目安です。現地・築年・搬出条件で ±30% 動きます'+(c.unitFallback?'（相場の仮単価で計算中）':'')+'。</div>';
-    return h;
-  }
-
-  var html =
-    '<div class="page-head only-desktop"><div><h1>利益シミュレーション</h1><p>月間成約件数 × 1件平均利益 から、月間・年間利益を試算。</p></div></div>'+
-    '<div class="grid" style="grid-template-columns:1fr;gap:16px">'+
-      '<div class="card"><div class="section-label">入力</div>'+
-        '<div class="form-grid">'+
-          fieldInput("月間成約件数","sim_deals",simState.deals,{type:"number",inputmode:"numeric"})+
-          fieldInput("1件平均利益 (円)","sim_profit",simState.profit,{type:"number",inputmode:"numeric"})+
-        '</div>'+
-        '<div class="row" style="margin-top:10px">'+
-          '<button class="btn btn--soft btn--sm" data-preset="150000">¥150,000</button>'+
-          '<button class="btn btn--soft btn--sm" data-preset="200000">¥200,000</button>'+
-          '<button class="btn btn--soft btn--sm" data-preset="300000">¥300,000</button>'+
-        '</div>'+
-      '</div>'+
-      '<div class="stats">'+
-        '<div class="stat stat--accent"><div class="stat__label">月間利益</div><div class="stat__value tnum" id="simM">'+yen(cur.m)+'</div>'+
-          '<div class="stat__delta">'+simState.deals+'件 × '+yen(simState.profit)+'</div></div>'+
-        '<div class="stat stat--good"><div class="stat__label">年間利益</div><div class="stat__value tnum" id="simY">'+yen(cur.y)+'</div>'+
-          '<div class="stat__delta">月間 × 12</div></div>'+
-      '</div>'+
-      '<div class="card"><div class="section-label">件数別の早見表（1件平均利益 '+yen(simState.profit)+'）</div>'+
-        '<div class="table-wrap"><table class="table" style="min-width:auto"><thead><tr><th>月間成約</th><th class="num">月間利益</th><th class="num">年間利益</th></tr></thead><tbody id="simTable">'+
-        rows.map(function(x){ return '<tr><td>月 '+x.n+' 件</td><td class="num">'+yen(x.r.m)+'</td><td class="num">'+yen(x.r.y)+'</td></tr>'; }).join("")+
-        '</tbody></table></div></div>'+
-      '<div class="card"><div class="section-label">土地から延床・解体費のざっくり計算</div>'+
-        '<p class="muted" style="font-size:12.5px;margin:0 0 10px">物件情報の「土地面積」と「建ぺい率」だけで、だいたいの延床坪と解体費が出ます（案件を作らずに試せます）。</p>'+
-        '<div class="form-grid">'+
-          fieldInput("土地面積","lc_area",simLand.area,{inputmode:"decimal",placeholder:"坪→ 60 ／ 平米→ 198㎡",hint:"坪はそのまま数字。平米は「198㎡」と単位つきで"})+
-          fieldInput("建ぺい率 %","lc_cov",simLand.coverage,{type:"number",inputmode:"numeric",placeholder:"例) 60"})+
-          fieldInput("階数","lc_floors",simLand.floors,{type:"number",inputmode:"numeric"})+
-          fieldSelect("構造","lc_st",STRUCTURES,simLand.structure,{blank:false})+
-        '</div>'+
-        '<div class="divider"></div>'+
-        '<div id="lcResult">'+landResultHTML()+'</div>'+
-      '</div>'+
-    '</div>';
-
-  return {
-    title:"シミュレーション", html:html,
-    mount:function(root){
-      function refresh(){
-        var cur = calc(simState.deals);
-        root.querySelector("#simM").textContent = yen(cur.m);
-        root.querySelector("#simY").textContent = yen(cur.y);
-        root.querySelector("#simTable").innerHTML = [2,4,6,8].map(function(n){
-          var r = calc(n); return '<tr><td>月 '+n+' 件</td><td class="num">'+yen(r.m)+'</td><td class="num">'+yen(r.y)+'</td></tr>';
-        }).join("");
-      }
-      root.querySelector('[data-field="sim_deals"]').addEventListener("input", function(){ simState.deals = num(this.value)||0; refresh(); });
-      root.querySelector('[data-field="sim_profit"]').addEventListener("input", function(){ simState.profit = num(this.value)||0; refresh(); });
-      root.querySelectorAll("[data-preset]").forEach(function(b){
-        b.onclick = function(){ simState.profit = Number(b.getAttribute("data-preset")); root.querySelector('[data-field="sim_profit"]').value = simState.profit; refresh(); };
-      });
-
-      // 土地から延床・解体費のざっくり計算
-      var lcMap = { lc_area:"area", lc_cov:"coverage", lc_floors:"floors", lc_st:"structure" };
-      Object.keys(lcMap).forEach(function(id){
-        var el = root.querySelector('[data-field="'+id+'"]');
-        if (!el) return;
-        el.addEventListener(el.tagName === "SELECT" ? "change" : "input", function(){
-          simLand[lcMap[id]] = this.value;
-          var box = root.querySelector("#lcResult");
-          if (box) box.innerHTML = landResultHTML();
-        });
-      });
     }
   };
 }
@@ -6590,10 +6525,8 @@ var NAV = [
   { key:"/",             label:"ダッシュボード", icon:"grid" },
   { key:"/deals",        label:"案件一覧",       icon:"list" },
   { key:"/deals/new",    label:"新規案件登録",   icon:"plus" },
-  { key:"/follow-ups",   label:"追客管理",       icon:"bell" },
   { key:"/profit",       label:"利益管理",       icon:"yen" },
   { key:"/cashflow",     label:"資金繰り",       icon:"clock" },
-  { key:"/simulation",   label:"シミュレーション", icon:"slider" },
   { key:"/analytics",    label:"営業分析",       icon:"chart" },
   { key:"/settings",     label:"設定",           icon:"gear" }
 ];
@@ -6601,7 +6534,6 @@ var TABS = [
   { key:"/",           label:"ホーム", icon:"grid" },
   { key:"/deals",      label:"案件",   icon:"list" },
   { key:"/deals/new",  label:"登録",   icon:"plus" },
-  { key:"/follow-ups", label:"追客",   icon:"bell" },
   { key:"__more",      label:"その他", icon:"more" }
 ];
 
@@ -6702,7 +6634,7 @@ function boot(){
       '<div class="sheet__grabzone" id="sheetGrab"><div class="sheet__grab"></div>'+
       '<div class="sheet__title">メニュー</div></div>'+
       '<nav class="nav">'+
-        NAV.filter(function(n){ return ["/profit","/cashflow","/simulation","/analytics","/settings"].indexOf(n.key) >= 0; })
+        NAV.filter(function(n){ return ["/profit","/cashflow","/analytics","/settings"].indexOf(n.key) >= 0; })
            .map(function(n){ return '<button type="button" class="nav__item" data-sheet-nav="'+n.key+'">'+icon(n.icon)+'<span>'+esc(n.label)+'</span></button>'; }).join("")+
       '</nav>'+
     '</div>'+
