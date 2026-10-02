@@ -898,7 +898,8 @@ var WHATS_NEW = {
     "新規登録フォームから「案件登録日」欄をなくしました（登録した日が自動で入ります）",
     "新規登録フォーム・案件詳細の「現場住所」「物件ページURL」を横並びにしてコンパクトにしました",
     "新規登録フォームで「現場住所」「物件ページURL」の並びがズレていた不具合を修正しました",
-    "金額欄の入力例を「680万」→「100万」に変更しました"
+    "金額欄の入力例を「680万」→「100万」に変更しました",
+    "物件情報の「構造」に「鉄骨造」を追加しました（木造／鉄骨造／RC造／SRC造）"
   ],
   "2026-10-01 r147": [
     "ホームのヒーローカードを改善。成約がまだ無い時でも、見込利益（進行中）だけは見られるようにしました（確定利益の推移グラフは成約後に表示されます）"
@@ -4070,7 +4071,7 @@ function preFieldsHTML(pre){
     '<div class="form-grid-2">'+
       peInput("土地の広さ（坪）","land_tsubo",pre.land_tsubo,{inputmode:"decimal",placeholder:"坪→ 41.5 ／ 平米→ 137㎡",hint:"平米は「137㎡」と単位つきで → 自動で坪に換算"})+
       peInput("建坪（坪）","build_tsubo",pre.build_tsubo,{inputmode:"decimal",placeholder:"坪→ 30 ／ 平米→ 99㎡",hint:"平米は「99㎡」と単位つきで → 自動で坪に換算"})+
-      peSegment("構造","structure",["木造","RC造","SRC造"],pre.structure)+
+      peSegment("構造","structure",["木造","鉄骨造","RC造","SRC造"],pre.structure)+
       peSegment("階数","floors",["1","2","3","4"],pre.floors)+
       '<div class="col-span field"><span class="field__label">メモ</span>'+
         '<textarea class="input" data-pe="memo" placeholder="例：角地・前面道路が狭い・隣家が近い・残置物多め など">'+esc(pre.memo||"")+'</textarea></div>'+
